@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>おくすりチェック！💊</title>
-  <script src="[https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js](https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js)"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -94,8 +94,8 @@
 
 
   <script>
-    // 【環境設定】ご自身のGASウェブアプリURLをここに貼り付けてください
-    const GAS_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+    // 【環境設定】ご提示いただいたGASウェブアプリURLを反映しました
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwy1VKCy0ud87bkvtomzsNkLrwJWE8LUI10IssxVPGr2GIgKaB1Xn1m8YDcLngC5xYywA/exec";
 
     // 状態管理用オブジェクト
     let state = {
@@ -117,7 +117,6 @@
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('id')) {
         state.currentSelectedMedId = urlParams.get('id');
-        // NFCタグから特定のお薬IDつきで起動された場合は、リストロード後に直接カメラ画面へ誘導可能
       }
       
       // 2. お薬リストのロード（キャッシュ対策 & タイムアウト付き）
@@ -201,7 +200,7 @@
       const file = e.target.files[0];
       if (!file) return; // キャンセル時
 
-      // 【要件】スマホのローカル（カメラロール/写真アプリ）に強制保存させるダウンロード処理
+      // スマホのローカル（カメラロール/写真アプリ）に強制保存させるダウンロード処理
       saveImageToLocal(file);
 
       // 既存仕様：ブラウザによる通信破棄を防ぐため、完了前に「送信中UI」を挟む
