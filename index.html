@@ -57,7 +57,7 @@
 <body>
 
   <div id="loading-view" class="view active-view">
-    <h2>じゅんび中... ⏳</h2>
+    <h2>じじゅんび中... ⏳</h2>
     <div class="spinner"></div>
   </div>
 
@@ -98,7 +98,7 @@
 
   <div id="sending-view" class="view">
     <h2>はなまる を つけています... 💮</h2>
-    <p>画面を閉じずに、すこし待ってね</p>
+    <p>（※iPhoneでは「許可」ボタンを押してね）</p>
     <div class="spinner"></div>
   </div>
 
@@ -107,12 +107,13 @@
     <h2>すごーい！！<br>よくできました！🌟</h2>
     
     <div id="child-message-box" class="child-comment"></div>
+    <p style="font-size: 0.9rem; color: #7f8c8d; margin-top:-10px;">証拠（しゃしん）を ほぞんしたよ！🖼️</p>
 
     <button class="btn" style="background-color: #2ecc71; box-shadow:0 6px 0 #27ae60;" onclick="location.reload()">最初にもどる</button>
   </div>
 
   <div id="error-view" class="view">
-    <h2>うーん、つつながなかったよ 😢</h2>
+    <h2>うーん、つながらなかったよ 😢</h2>
     <p>電波のよいところで、もういちど試してみてね。</p>
     <button class="btn" style="background-color: #e74c3c; box-shadow:0 6px 0 #c0392b;" onclick="location.reload()">やりなおす</button>
   </div>
@@ -132,10 +133,8 @@
       { rarity: "N", text: "お薬のめたね！えらい！💮" },
       { rarity: "N", text: "ニコニコな 1日に なりますように！😊" },
       { rarity: "N", text: "バッチリだよ！そのちょうし！👍" },
-      { rarity: "N", text: "しゃしん、上手にとれたね！📸" },
       { rarity: "N", text: "きょうも はなまる だよ！💮" },
       { rarity: "N", text: "ごはんも モリモリ たべようね！🍚" },
-      { rarity: "N", text: "おてつだい も ひとつ できるかな？✨" },
       { rarity: "N", text: "きょうは どんな たのしいことがあるかな？🎈" },
       { rarity: "N", text: "ぐっすり ねむれる おまじない！🌟" },
       
@@ -145,14 +144,12 @@
       { rarity: "R", text: "グッドジョブ！きょうは さいこうの 1日だ！🚀" },
       { rarity: "R", text: "ラッキーデー！おやつが いつもより おいしいかも？🍩" },
       { rarity: "R", text: "たいへん よくできました！王冠をプレゼント！👑" },
-      { rarity: "R", text: "魔法のパワーが たまったよ！🪄✨" },
       { rarity: "R", text: "パーフェクト！きみの えがお が 1番だね！😆" },
 
       { rarity: "SR", text: "【SR】でんせつの けん を てにいれた！⚔️ きょうは むてきだ！" },
       { rarity: "SR", text: "【SR】ミラクルパワー ぜんかい！🔥 なんにでも ちょうせんできるぞ！" },
-      { rarity: "SR", text: "【SR】スーパー・ラッキー！🌟 きょうは ほしに ねがいごとをしよう！" },
+      { rarity: "SR", text: "【SR】スーパー・ラッキー！🌟 きょうは ほしに ね願いごとをしよう！" },
       { rarity: "SR", text: "【SR】だいはっけん！💎 きみは てんさい かもしれない！" },
-      { rarity: "SR", text: "【SR】きょうの きみは ロケットみたいに とべそうだ！🚀💨" },
 
       { rarity: "UR", text: "🌈【超激レア】🌈 うちゅういち の がんばりやさん！ 👑✨" },
       { rarity: "UR", text: "🌈【超激レア】🌈 まぼろしの ドラゴン が なかまになった！ 🐉🔥" },
@@ -186,7 +183,6 @@
       await loadMedicationList();
     });
 
-    // スプレッドシートからデータ取得
     async function loadMedicationList() {
       const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
@@ -198,7 +194,6 @@
           state.medList = response.data;
           renderList();
           
-          // ★NFC起動時の制限チェック（回数上限に達していたらカメラに進ませない）
           if (state.currentSelectedMedId) {
             const selectedMed = state.medList.find(m => m.id === state.currentSelectedMedId);
             if (selectedMed) {
@@ -207,9 +202,8 @@
               const limitCount = parseInt(selectedMed.limitCount || "0", 10);
               
               if (limitCount > 0 && currentCount >= limitCount) {
-                // すでに上限に達している場合は、カメラを開かず一覧画面へ
                 alert("きょうの 分の お薬チェックは もうおしまいだよ！✨");
-                state.currentSelectedMedId = null; // リセット
+                state.currentSelectedMedId = null; 
               } else {
                 openCameraView(selectedMed.id, selectedMed.title);
                 return;
@@ -226,21 +220,18 @@
       }
     }
 
-    // リスト描画（タスク一覧）
     function renderList() {
       const container = document.getElementById('med-list-container');
       container.innerHTML = '';
       
       state.medList.forEach(med => {
         const todayStr = new Date().toISOString().slice(0, 10);
-        // ★修正：回数ベースでの管理に変更
         const currentCount = parseInt(localStorage.getItem(`count_${med.id}_${todayStr}`) || "0", 10);
         const limitCount = parseInt(med.limitCount || "0", 10);
         
         const card = document.createElement('div');
         card.className = 'med-card';
         
-        // 上限回数が設定されていて、現在の回数がそれに達している場合
         if (limitCount > 0 && currentCount >= limitCount) {
           card.innerHTML = `
             <h3>✅ ${med.title}</h3>
@@ -259,7 +250,6 @@
       });
     }
 
-    // NFC設定画面の描画
     function renderNfcSetup() {
       const container = document.getElementById('nfc-url-container');
       container.innerHTML = '';
@@ -297,10 +287,30 @@
       switchView('camera-view');
     }
 
+    // =========================================================
+    // ★証拠残し（強制ダウンロード）処理
+    // =========================================================
+    function saveImageToLocal(file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      // ファイル名に日時を入れる
+      const dateStr = new Date().toLocaleString('ja-JP').replace(/[\/\s:]/g, '-');
+      a.download = `おくすり証拠写真_${dateStr}.jpg`; 
+      document.body.appendChild(a);
+      a.click(); // これでダウンロードが始まります
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    // =========================================================
+
     // カメラ撮影後の処理
     document.getElementById('camera-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
+
+      // ★証拠写真を端末に保存（iPhoneではここでポップアップが出ます）
+      saveImageToLocal(file);
 
       switchView('sending-view');
 
@@ -311,12 +321,12 @@
       try {
         await Promise.race([fetchPromise, timeoutPromise]);
 
-        // ★修正：撮影完了時に「本日の完了カウント」を+1する
+        // カウントを+1
         const todayStr = new Date().toISOString().slice(0, 10);
         const currentCount = parseInt(localStorage.getItem(`count_${state.currentSelectedMedId}_${todayStr}`) || "0", 10);
         localStorage.setItem(`count_${state.currentSelectedMedId}_${todayStr}`, (currentCount + 1).toString());
 
-        // ガチャを引いて結果を表示
+        // ガチャメッセージ
         const gachaResult = drawGacha();
         const messageBox = document.getElementById('child-message-box');
         
