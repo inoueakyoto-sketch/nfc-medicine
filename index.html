@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>おくすりチェック！💊</title>
+  <script src="[https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js](https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js)"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f7f9fc; color: #333;
+      text-align: center;
+    }
+    /* SPA用の画面表示切り替え */
+    .view { display: none; padding: 20px; min-height: 100vh; }
+    .active-view { display: block; }
+
+    h1, h2 { color: #2c3e50; margin-top: 30px; }
+    p { font-size: 1.1rem; line-height: 1.5; color: #555; }
+
+    /* 子ども向けのでっかいボタンUI */
+    .btn {
+      display: inline-block; margin: 20px auto;
+      padding: 20px 40px; font-size: 1.3rem; font-weight: bold;
+      color: white; border-radius: 20px; cursor: pointer;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.15); transition: all 0.1s;
+      border: none; max-width: 90%; width: 320px;
+    }
+    .btn-camera { background-color: #ff9800; box-shadow: 0 6px 0 #e65100; }
+    .btn-camera:active { transform: translateY(4px); box-shadow: 0 2px 0 #e65100; }
+    
+    /* 読み込み中アニメーション用（簡易版） */
+    .spinner {
+      border: 6px solid #f3f3f3; border-top: 6px solid #3498db;
+      border-radius: 50%; width: 50px; height: 50px;
+      animation: spin 1s linear infinite; margin: 30px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* お薬リストのスタイル */
+    .med-card {
+      background: white; border-radius: 15px; padding: 20px;
+      margin: 15px auto; max-width: 400px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loading-view" class="view active-view">
+    <h2>じゅんび中... ⏳</h2>
+    <div class="spinner"></div>
+  </div>
+
+  <div id="task-view" class="view">
+    <h1>おくすり のんだかな？ 💊</h1>
+    <p id="user-welcome">こんにちは！今日もがんばろうね！</p>
+    <div id="med-list-container">
+      </div>
+  </div>
+
+  <div id="camera-view" class="view">
+    <h2 id="target-med-title">お薬の名前</h2>
+    <p>のんだら、からっぽの ふくろ・シートを<br><strong>しゃしん</strong> にとって教えてね！📸</p>
+    
+    <label class="btn btn-camera">
+      📸 しゃしんをとる！
+      <input type="file" accept="image/*" capture="environment" id="camera-input" style="display: none;">
+    </label>
+    <br><br>
+    <button onclick="switchView('task-view')" style="background:none; border:none; color:#7f8c8d; text-decoration:underline;">もどる</button>
+  </div>
+
+  <div id="sending-view" class="view">
+    <h2>データを おくっています... 🚀</h2>
+    <p>画面を閉じずに、すこし待ってね</p>
+    <div class="spinner"></div>
+  </div>
+
+  <div id="complete-view" class="view">
+    <h1 style="font-size: 3rem; margin-top: 50px;">🎉</h1>
+    <h2>すごーい！！<br>よくできました！🌟</h2>
+    <p>おくすりチェック まんりょうです！</p>
+    <button class="btn" style="background-color: #2ecc71; box-shadow:0 6px 0 #27ae60;" onclick="location.reload()">最初にもどる</button>
+  </div>
+
+  <div id="error-view" class="view">
+    <h2>うーん、つながらなかったよ 😢</h2>
+    <p>電波のよいところで、もういちど試してみてね。</p>
+    <button class="btn" style="background-color: #e74c3c; box-shadow:0 6px 0 #c0392b;" onclick="location.reload()">やりなおす</button>
+  </div>
+
+
+  <script>
+    // 【環境設定】ご自身のGASウェブアプリURLをここに貼り付けてください
+    const GAS_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+
+    // 状態管理用オブジェクト
+    let state = {
+      currentUserId: 'user_001', // パラメータがない場合のデフォルト
+      currentSelectedMedId: null,
+      medList: []
+    };
+
+    // 画面切り替え関数 (疑似SPA)
+    function switchView(viewId) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+      const target = document.getElementById(viewId);
+      if(target) target.classList.add('active-view');
+    }
+
+    // アプリ起動時の初期処理
+    window.addEventListener('DOMContentLoaded', async () => {
+      // 1. URLパラメータ起動のチェック (?id=xxx)
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('id')) {
+        state.currentSelectedMedId = urlParams.get('id');
+        // NFCタグから特定のお薬IDつきで起動された場合は、リストロード後に直接カメラ画面へ誘導可能
+      }
+      
+      // 2. お薬リストのロード（キャッシュ対策 & タイムアウト付き）
+      await loadMedicationList();
+    });
+
+    // リスト取得（フリーズ対策＋キャッシュ対策付き）
+    async function loadMedicationList() {
+      // 強固なキャッシュを避けるためタイムスタンプを付与
+      const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
+      
+      // Promise.raceによるタイムアウト機能（8秒）
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 8000)
+      );
+      
+      const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => res.json());
+
+      try {
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        if (response.status === 'success') {
+          state.medList = response.data;
+          renderList();
+          
+          // もしNFC等から特定IDで直接起動されていた場合、対応する画面へスキップ
+          if (state.currentSelectedMedId) {
+            const selectedMed = state.medList.find(m => m.id === state.currentSelectedMedId);
+            if (selectedMed) {
+              openCameraView(selectedMed.id, selectedMed.title);
+              return;
+            }
+          }
+          switchView('task-view');
+        } else {
+          switchView('error-view');
+        }
+      } catch (error) {
+        console.error('通信エラーまたはタイムアウト:', error);
+        switchView('error-view');
+      }
+    }
+
+    // リストの描画処理
+    function renderList() {
+      const container = document.getElementById('med-list-container');
+      container.innerHTML = '';
+      
+      state.medList.forEach(med => {
+        // 既存の「1日1回制限」チェックロジック（localStorage連携）
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const isCompletedToday = localStorage.getItem(`done_${med.id}_${todayStr}`);
+        
+        const card = document.createElement('div');
+        card.className = 'med-card';
+        
+        if (isCompletedToday && med.limitType === '1日1回') {
+          card.innerHTML = `
+            <h3>✅ ${med.title}</h3>
+            <p style="color: #2ecc71; font-weight: bold;">今日はもう のんだよ！</p>
+          `;
+        } else {
+          card.innerHTML = `
+            <h3>💊 ${med.title} (${med.time})</h3>
+            <button class="btn btn-camera" style="padding:10px 20px; font-size:1.1rem; width:auto;" 
+              onclick="openCameraView('${med.id}', '${med.title}')">のんだよ！📸</button>
+          `;
+        }
+        container.appendChild(card);
+      });
+    }
+
+    // カメラ画面への遷移
+    function openCameraView(medId, medTitle) {
+      state.currentSelectedMedId = medId;
+      document.getElementById('target-med-title').innerText = medTitle;
+      switchView('camera-view');
+    }
+
+    // カメラ撮影時のイベントリスナー
+    document.getElementById('camera-input').addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return; // キャンセル時
+
+      // 【要件】スマホのローカル（カメラロール/写真アプリ）に強制保存させるダウンロード処理
+      saveImageToLocal(file);
+
+      // 既存仕様：ブラウザによる通信破棄を防ぐため、完了前に「送信中UI」を挟む
+      switchView('sending-view');
+
+      // GASへのログ保存リクエスト（POST / no-cors）
+      const postDataUrl = `${GAS_URL}?action=log&id=${state.currentSelectedMedId}&name=${encodeURIComponent('ユーザー')}`;
+
+      // タイムアウト付きでPOST実行
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
+      const fetchPromise = fetch(postDataUrl, { method: 'POST', mode: 'no-cors' });
+
+      try {
+        // no-corsなので中身は不透明(opaque)だが、通信終了をPromise.raceで待つ
+        await Promise.race([fetchPromise, timeoutPromise]);
+
+        // 今日飲んだフラグをローカルストレージに記憶（1日1回制限用）
+        const todayStr = new Date().toISOString().slice(0, 10);
+        localStorage.setItem(`done_${state.currentSelectedMedId}_${todayStr}`, 'true');
+
+        // 完了表示・派手なフィードバック
+        switchView('complete-view');
+        
+        // 1. タップバイブレーション
+        if (navigator.vibrate) {
+          navigator.vibrate([100, 50, 100, 50, 200]);
+        }
+        // 2. Confetti（紙吹雪ドカーン）
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+
+      } catch (error) {
+        console.error('送信エラーまたはタイムアウト:', error);
+        switchView('error-view');
+      } finally {
+        // 入力値をリセット
+        e.target.value = '';
+      }
+    });
+
+    // 撮影した写真をスマホ端末のローカルにダウンロード保存させる関数
+    function saveImageToLocal(file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/[\/\s:]/g, '-');
+      a.download = `おくすり写真_${dateStr}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
