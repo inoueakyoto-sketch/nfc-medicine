@@ -13,14 +13,11 @@
       background-color: #f7f9fc; color: #333;
       text-align: center;
     }
-    /* SPA用の画面表示切り替え */
     .view { display: none; padding: 20px; min-height: 100vh; }
     .active-view { display: block; }
-
     h1, h2 { color: #2c3e50; margin-top: 30px; }
     p { font-size: 1.1rem; line-height: 1.5; color: #555; }
 
-    /* 子ども向けのでっかいボタンUI */
     .btn {
       display: inline-block; margin: 20px auto;
       padding: 20px 40px; font-size: 1.3rem; font-weight: bold;
@@ -31,7 +28,6 @@
     .btn-camera { background-color: #ff9800; box-shadow: 0 6px 0 #e65100; }
     .btn-camera:active { transform: translateY(4px); box-shadow: 0 2px 0 #e65100; }
     
-    /* 読み込み中アニメーション用（簡易版） */
     .spinner {
       border: 6px solid #f3f3f3; border-top: 6px solid #3498db;
       border-radius: 50%; width: 50px; height: 50px;
@@ -39,11 +35,16 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* お薬リストのスタイル */
     .med-card {
       background: white; border-radius: 15px; padding: 20px;
       margin: 15px auto; max-width: 400px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    /* お子様向けコメント用のスタイル */
+    .child-comment {
+      font-size: 1.4rem; color: #e67e22; font-weight: bold;
+      margin: 20px 0; background-color: #fff3e0;
+      padding: 15px; border-radius: 10px;
     }
   </style>
 </head>
@@ -57,8 +58,7 @@
   <div id="task-view" class="view">
     <h1>おくすり のんだかな？ 💊</h1>
     <p id="user-welcome">こんにちは！今日もがんばろうね！</p>
-    <div id="med-list-container">
-      </div>
+    <div id="med-list-container"></div>
   </div>
 
   <div id="camera-view" class="view">
@@ -70,11 +70,11 @@
       <input type="file" accept="image/*" capture="environment" id="camera-input" style="display: none;">
     </label>
     <br><br>
-    <button onclick="switchView('task-view')" style="background:none; border:none; color:#7f8c8d; text-decoration:underline;">もどる</button>
+    <button onclick="switchView('task-view')" style="background:none; border:none; color:#7f8c8d; text-decoration:underline; font-size: 1rem;">もどる</button>
   </div>
 
   <div id="sending-view" class="view">
-    <h2>データを おくっています... 🚀</h2>
+    <h2>はなまる を つけています... 💮</h2>
     <p>画面を閉じずに、すこし待ってね</p>
     <div class="spinner"></div>
   </div>
@@ -82,7 +82,9 @@
   <div id="complete-view" class="view">
     <h1 style="font-size: 3rem; margin-top: 50px;">🎉</h1>
     <h2>すごーい！！<br>よくできました！🌟</h2>
-    <p>おくすりチェック まんりょうです！</p>
+    
+    <div id="child-message-box" class="child-comment"></div>
+
     <button class="btn" style="background-color: #2ecc71; box-shadow:0 6px 0 #27ae60;" onclick="location.reload()">最初にもどる</button>
   </div>
 
@@ -94,45 +96,91 @@
 
 
   <script>
-    // 【環境設定】ご提示いただいたGASウェブアプリURLを反映しました
+    // GASのURL
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwy1VKCy0ud87bkvtomzsNkLrwJWE8LUI10IssxVPGr2GIgKaB1Xn1m8YDcLngC5xYywA/exec";
 
-    // 状態管理用オブジェクト
+    // 状態管理
     let state = {
-      currentUserId: 'user_001', // パラメータがない場合のデフォルト
       currentSelectedMedId: null,
       medList: []
     };
 
-    // 画面切り替え関数 (疑似SPA)
+    // ================= ガチャ機能・メッセージデータ =================
+    const gachaMessages = [
+      // N (ノーマル: 60%)
+      { rarity: "N", text: "きょうも げんきに すごそうね！☀️" },
+      { rarity: "N", text: "お薬のめたね！えらい！💮" },
+      { rarity: "N", text: "ニコニコな 1日に なりますように！😊" },
+      { rarity: "N", text: "バッチリだよ！そのちょうし！👍" },
+      { rarity: "N", text: "しゃしん、上手にとれたね！📸" },
+      { rarity: "N", text: "きょうも はなまる だよ！💮" },
+      { rarity: "N", text: "ごはんも モリモリ たべようね！🍚" },
+      { rarity: "N", text: "おてつだい も ひとつ できるかな？✨" },
+      { rarity: "N", text: "きょうは どんな たのしいことがあるかな？🎈" },
+      { rarity: "N", text: "ぐっすり ねむれる おまじない！🌟" },
+      
+      // R (レア: 25%)
+      { rarity: "R", text: "キラキラパワー ゲット！✨ いいことあるよ！" },
+      { rarity: "R", text: "すごいぞ！ヒーローみたいにかっこいい！🦸‍♂️" },
+      { rarity: "R", text: "やったー！きみの レベルが あがった！🍄" },
+      { rarity: "R", text: "グッドジョブ！きょうは さいこうの 1日だ！🚀" },
+      { rarity: "R", text: "ラッキーデー！おやつが いつもより おいしいかも？🍩" },
+      { rarity: "R", text: "たいへん よくできました！王冠をプレゼント！👑" },
+      { rarity: "R", text: "魔法のパワーが たまったよ！🪄✨" },
+      { rarity: "R", text: "パーフェクト！きみの えがお が 1番だね！😆" },
+
+      // SR (スーパーレア: 12%)
+      { rarity: "SR", text: "【SR】でんせつの けん を てにいれた！⚔️ きょうは むてきだ！" },
+      { rarity: "SR", text: "【SR】ミラクルパワー ぜんかい！🔥 なんにでも ちょうせんできるぞ！" },
+      { rarity: "SR", text: "【SR】スーパー・ラッキー！🌟 きょうは ほしに ねがいごとをしよう！" },
+      { rarity: "SR", text: "【SR】だいはっけん！💎 きみは てんさい かもしれない！" },
+      { rarity: "SR", text: "【SR】きょうの きみは ロケットみたいに とべそうだ！🚀💨" },
+
+      // UR (ウルトラレア: 3%)
+      { rarity: "UR", text: "🌈【超激レア】🌈 うちゅういち の がんばりやさん！ 👑✨" },
+      { rarity: "UR", text: "🌈【超激レア】🌈 まぼろしの ドラゴン が なかまになった！ 🐉🔥" },
+      { rarity: "UR", text: "🌈【超激レア】🌈 きみは でんせつの ゆうしゃ だ！ さあ、ぼうけんに しゅっぱつだ！ ⚔️🛡️" }
+    ];
+
+    function drawGacha() {
+      const rand = Math.random() * 100;
+      let targetRarity = "N";
+      
+      if (rand < 3) {
+        targetRarity = "UR";
+      } else if (rand < 15) {
+        targetRarity = "SR";
+      } else if (rand < 40) {
+        targetRarity = "R";
+      } else {
+        targetRarity = "N";
+      }
+      
+      const filteredMessages = gachaMessages.filter(m => m.rarity === targetRarity);
+      return filteredMessages[Math.floor(Math.random() * filteredMessages.length)];
+    }
+    // =========================================================
+
+    // 画面切り替え
     function switchView(viewId) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
       const target = document.getElementById(viewId);
       if(target) target.classList.add('active-view');
     }
 
-    // アプリ起動時の初期処理
+    // 初期起動
     window.addEventListener('DOMContentLoaded', async () => {
-      // 1. URLパラメータ起動のチェック (?id=xxx)
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('id')) {
         state.currentSelectedMedId = urlParams.get('id');
       }
-      
-      // 2. お薬リストのロード（キャッシュ対策 & タイムアウト付き）
       await loadMedicationList();
     });
 
-    // リスト取得（フリーズ対策＋キャッシュ対策付き）
+    // スプレッドシートからデータ取得
     async function loadMedicationList() {
-      // 強固なキャッシュを避けるためタイムスタンプを付与
       const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
-      
-      // Promise.raceによるタイムアウト機能（8秒）
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 8000)
-      );
-      
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
       const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => res.json());
 
       try {
@@ -141,7 +189,6 @@
           state.medList = response.data;
           renderList();
           
-          // もしNFC等から特定IDで直接起動されていた場合、対応する画面へスキップ
           if (state.currentSelectedMedId) {
             const selectedMed = state.medList.find(m => m.id === state.currentSelectedMedId);
             if (selectedMed) {
@@ -154,18 +201,17 @@
           switchView('error-view');
         }
       } catch (error) {
-        console.error('通信エラーまたはタイムアウト:', error);
+        console.error('通信エラー:', error);
         switchView('error-view');
       }
     }
 
-    // リストの描画処理
+    // リスト描画
     function renderList() {
       const container = document.getElementById('med-list-container');
       container.innerHTML = '';
       
       state.medList.forEach(med => {
-        // 既存の「1日1回制限」チェックロジック（localStorage連携）
         const todayStr = new Date().toISOString().slice(0, 10);
         const isCompletedToday = localStorage.getItem(`done_${med.id}_${todayStr}`);
         
@@ -179,7 +225,8 @@
           `;
         } else {
           card.innerHTML = `
-            <h3>💊 ${med.title} (${med.time})</h3>
+            <h3>💊 ${med.title}</h3>
+            <p style="font-size: 0.9rem; color: #7f8c8d;">(${med.time} の おくすり)</p>
             <button class="btn btn-camera" style="padding:10px 20px; font-size:1.1rem; width:auto;" 
               onclick="openCameraView('${med.id}', '${med.title}')">のんだよ！📸</button>
           `;
@@ -188,70 +235,65 @@
       });
     }
 
-    // カメラ画面への遷移
+    // カメラ画面へ遷移
     function openCameraView(medId, medTitle) {
       state.currentSelectedMedId = medId;
       document.getElementById('target-med-title').innerText = medTitle;
       switchView('camera-view');
     }
 
-    // カメラ撮影時のイベントリスナー
+    // カメラ撮影後の処理
     document.getElementById('camera-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
-      if (!file) return; // キャンセル時
+      if (!file) return;
 
-      // スマホのローカル（カメラロール/写真アプリ）に強制保存させるダウンロード処理
-      saveImageToLocal(file);
-
-      // 既存仕様：ブラウザによる通信破棄を防ぐため、完了前に「送信中UI」を挟む
       switchView('sending-view');
 
-      // GASへのログ保存リクエスト（POST / no-cors）
       const postDataUrl = `${GAS_URL}?action=log&id=${state.currentSelectedMedId}&name=${encodeURIComponent('ユーザー')}`;
-
-      // タイムアウト付きでPOST実行
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
       const fetchPromise = fetch(postDataUrl, { method: 'POST', mode: 'no-cors' });
 
       try {
-        // no-corsなので中身は不透明(opaque)だが、通信終了をPromise.raceで待つ
         await Promise.race([fetchPromise, timeoutPromise]);
 
-        // 今日飲んだフラグをローカルストレージに記憶（1日1回制限用）
+        // ローカルストレージに記憶
         const todayStr = new Date().toISOString().slice(0, 10);
         localStorage.setItem(`done_${state.currentSelectedMedId}_${todayStr}`, 'true');
 
-        // 完了表示・派手なフィードバック
+        // ガチャを引いて結果を表示
+        const gachaResult = drawGacha();
+        const messageBox = document.getElementById('child-message-box');
+        
+        if (gachaResult.rarity === 'UR') {
+          messageBox.style.backgroundColor = '#ffd700';
+          messageBox.style.color = '#d35400';
+          messageBox.style.border = '4px solid #ff4500';
+        } else if (gachaResult.rarity === 'SR') {
+          messageBox.style.backgroundColor = '#f8c471';
+          messageBox.style.color = '#c0392b';
+          messageBox.style.border = '2px solid #e67e22';
+        } else {
+          messageBox.style.backgroundColor = '#fff3e0';
+          messageBox.style.color = '#e67e22';
+          messageBox.style.border = 'none';
+        }
+        
+        messageBox.innerHTML = `<strong>${gachaResult.text}</strong>`;
+
         switchView('complete-view');
         
-        // 1. タップバイブレーション
         if (navigator.vibrate) {
           navigator.vibrate([100, 50, 100, 50, 200]);
         }
-        // 2. Confetti（紙吹雪ドカーン）
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
       } catch (error) {
-        console.error('送信エラーまたはタイムアウト:', error);
+        console.error('送信エラー:', error);
         switchView('error-view');
       } finally {
-        // 入力値をリセット
         e.target.value = '';
       }
     });
-
-    // 撮影した写真をスマホ端末のローカルにダウンロード保存させる関数
-    function saveImageToLocal(file) {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      const dateStr = new Date().toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/[\/\s:]/g, '-');
-      a.download = `おくすり写真_${dateStr}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
   </script>
 </body>
 </html>
