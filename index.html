@@ -16,82 +16,95 @@
     * { box-sizing: border-box; }
     body {
       margin: 0; padding: 0;
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f7f9fc; color: #333;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background-color: #fff9e6; color: #333; /* 全体を明るいクリームイエローに */
       text-align: center;
     }
     .view { display: none; padding: 20px; min-height: 100vh; }
     .active-view { display: block; }
-    h1, h2 { color: #2c3e50; margin-top: 20px; }
-    p { font-size: 1.1rem; line-height: 1.5; color: #555; }
+    h1, h2 { color: #ff6f00; margin-top: 20px; text-shadow: 1px 1px 0 white; }
+    p { font-size: 1.1rem; line-height: 1.5; color: #5d4037; }
 
     .btn {
       display: inline-block; margin: 15px auto;
       padding: 15px 30px; font-size: 1.3rem; font-weight: bold;
-      color: white; border-radius: 20px; cursor: pointer;
-      box-shadow: 0 6px 0 rgba(0,0,0,0.15); transition: all 0.1s;
+      color: white; border-radius: 50px; cursor: pointer;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.1); transition: all 0.1s;
       border: none; max-width: 90%; width: 320px;
     }
-    .btn-camera { background-color: #ff9800; box-shadow: 0 6px 0 #e65100; }
-    .btn-camera:active { transform: translateY(4px); box-shadow: 0 2px 0 #e65100; }
-    .btn-dictionary { background-color: #8e44ad; box-shadow: 0 6px 0 #732d91; margin-bottom: 20px;}
+    .btn-camera { background-color: #ff9800; box-shadow: 0 6px 0 #ef6c00; }
+    .btn-camera:active { transform: translateY(4px); box-shadow: 0 2px 0 #ef6c00; }
+    .btn-dictionary { background-color: #4fc3f7; box-shadow: 0 6px 0 #0288d1; margin-bottom: 20px;}
     .btn-dictionary:active { transform: translateY(4px); box-shadow: none; }
-    .btn-copy { background-color: #3498db; padding: 10px 20px; font-size: 1rem; border-radius: 10px; box-shadow: 0 4px 0 #2980b9; margin-top: 10px;}
+    .btn-copy { background-color: #8bc34a; padding: 10px 20px; font-size: 1rem; border-radius: 10px; box-shadow: 0 4px 0 #689f38; margin-top: 10px;}
     
     .spinner {
-      border: 6px solid #f3f3f3; border-top: 6px solid #3498db;
+      border: 6px solid #f3f3f3; border-top: 6px solid #ff9800;
       border-radius: 50%; width: 50px; height: 50px;
       animation: spin 1s linear infinite; margin: 30px auto;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     .med-card {
-      background: white; border-radius: 15px; padding: 20px;
+      background: white; border-radius: 20px; padding: 20px;
       margin: 15px auto; max-width: 400px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      box-shadow: 0 8px 15px rgba(255,111,0,0.1);
+      border: 2px solid #ffe0b2;
     }
-    .url-input { width: 100%; padding: 10px; font-size: 0.9rem; background-color: #f1f2f6; border: 1px solid #dcdde1; border-radius: 5px; color: #7f8c8d; }
+    .url-input { width: 100%; padding: 10px; font-size: 0.9rem; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; color: #777; }
 
-    /* ★RPGステータス表示：緑〜青のポップな大冒険グラデーション */
+    /* ★ポップ＆視認性バツグンのステータス画面 */
     .rpg-status {
-      background: linear-gradient(135deg, #34e89e, #0f3443); 
-      color: white; 
-      padding: 15px; border-radius: 15px; margin: 10px auto 30px auto;
-      max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 3px solid #f1c40f; 
+      background: linear-gradient(135deg, #fff176, #ffb74d); /* 明るいサンシャイン・グラデーション */
+      color: #1a237e; /* 文字色は濃いネイビーで読みやすく */
+      padding: 20px; border-radius: 25px; margin: 10px auto 30px auto;
+      max-width: 400px; box-shadow: 0 10px 20px rgba(255,167,38,0.3);
+      border: 4px solid #ffffff; /* 白い太枠で区切りをはっきり */
     }
-    .rpg-level { font-size: 2.2rem; font-weight: 900; color: #f1c40f; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);} 
-    .rpg-title { font-size: 1.4rem; margin: 5px 0 0 0; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+    .rpg-level { 
+      font-size: 2.8rem; font-weight: 900; color: #d84315; margin: 0; 
+      text-shadow: 2px 2px 0px white; /* 白い縁取り効果 */
+    } 
+    .rpg-title { 
+      font-size: 1.6rem; margin: 5px 0 0 0; font-weight: 900; color: #1a237e;
+      text-shadow: 2px 2px 0px white; /* 称号も白い縁取りでクッキリ */
+    }
     
-    .rarity-label { font-size: 2rem; font-weight: 900; margin: 10px 0; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
-    .child-comment { font-size: 1.4rem; font-weight: bold; margin: 10px auto 20px auto; padding: 20px; border-radius: 15px; max-width: 400px;}
+    .rarity-label { font-size: 2rem; font-weight: 900; margin: 10px 0; }
+    .child-comment { font-size: 1.4rem; font-weight: bold; margin: 10px auto 20px auto; padding: 25px; border-radius: 20px; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);}
     
     .new-badge {
-      display: inline-block; background-color: #e74c3c; color: white;
-      font-size: 1.2rem; font-weight: bold; padding: 8px 15px; border-radius: 20px;
-      animation: bounce 1s infinite; margin-bottom: 10px; border: 2px solid white;
+      display: inline-block; background-color: #ff5252; color: white;
+      font-size: 1.3rem; font-weight: bold; padding: 10px 20px; border-radius: 50px;
+      animation: bounce 0.8s infinite; margin-bottom: 10px; border: 3px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-    .dict-grid { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 500px; margin: 0 auto; text-align: left; }
-    .dict-item { padding: 15px; border-radius: 10px; font-size: 1.1rem; font-weight: bold; display: flex; align-items: center; justify-content: flex-start; }
-    .dict-locked { background-color: #ecf0f1; color: #95a5a6; border: 2px dashed #bdc3c7; }
-    .dict-unlocked-N { background-color: #fff3e0; color: #d35400; border: 2px solid #e67e22; }
-    .dict-unlocked-R { background-color: #e8f8f5; color: #16a085; border: 2px solid #1abc9c; }
-    .dict-unlocked-SR { background-color: #f8c471; color: #c0392b; border: 2px solid #e67e22; }
-    .dict-unlocked-UR { background-color: #ffd700; color: #c0392b; border: 4px solid #ff4500; }
-    .rarity-tag { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 0.9rem; margin-right: 10px; color: white; }
-    .tag-N { background-color: #e67e22; } .tag-R { background-color: #1abc9c; } .tag-SR { background-color: #e67e22; } .tag-UR { background-color: #ff4500; }
+    .dict-grid { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 500px; margin: 0 auto; text-align: left; }
+    .dict-item { padding: 18px; border-radius: 15px; font-size: 1.1rem; font-weight: bold; display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 3px 6px rgba(0,0,0,0.05); }
+    .dict-locked { background-color: #eeeeee; color: #bdbdbd; border: 2px dashed #ccc; }
+    .dict-unlocked-N { background-color: #fff9c4; color: #ef6c00; border: 2px solid #ffcc80; }
+    .dict-unlocked-R { background-color: #e1f5fe; color: #0277bd; border: 2px solid #81d4fa; }
+    .dict-unlocked-SR { background-color: #f3e5f5; color: #7b1fa2; border: 2px solid #ce93d8; }
+    .dict-unlocked-UR { background-color: #fffde7; color: #d84315; border: 4px solid #fdd835; }
+    .rarity-tag { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.9rem; margin-right: 12px; color: white; font-weight: 900; }
+    .tag-N { background-color: #ffa726; } .tag-R { background-color: #29b6f6; } .tag-SR { background-color: #ba68c8; } .tag-UR { background-color: #fbc02d; color: #333; }
+
+    /* EXPバーのパステル化 */
+    .exp-bar-container { background:rgba(255,255,255,0.5); border-radius:50px; height:15px; width:85%; margin: 10px auto; overflow:hidden; border: 2px solid white; }
+    #dict-exp-bar-fill { background: linear-gradient(90deg, #ff4081, #f48fb1); height:100%; width:0%; transition: width 0.8s ease-out; }
   </style>
 </head>
 <body>
 
   <div id="loading-view" class="view active-view">
-    <h2>じゅんび中... ⏳</h2>
+    <h2 style="color: #ff9800;">ぼうけんの じゅんび中... ⏳</h2>
     <div class="spinner"></div>
   </div>
 
   <div id="task-view" class="view">
-    <h1>ぼうけんの しょ 🛡️</h1>
+    <h1>ぼうけんの しょ ⚔️</h1>
     
     <div class="rpg-status">
       <p class="rpg-level">Lv.<span id="top-level">1</span></p>
@@ -101,65 +114,65 @@
     <button class="btn btn-dictionary" onclick="openDictionary()">📖 どうぐ ＆ なかま ずかん</button>
     <div id="med-list-container"></div>
     
-    <div style="margin-top: 50px; border-top: 2px dashed #ccc; padding-top: 20px;">
-      <button onclick="renderNfcSetup()" style="background:none; border:none; color:#7f8c8d; text-decoration:underline; font-size: 1rem; cursor: pointer;">⚙️ NFCタグ設定（親御さん用）</button>
+    <div style="margin-top: 50px; border-top: 2px dashed #ffcc80; padding-top: 20px;">
+      <button onclick="renderNfcSetup()" style="background:none; border:none; color:#ffa726; text-decoration:underline; font-size: 1rem; cursor: pointer;">⚙️ おうちのかた用 せってい</button>
     </div>
   </div>
 
   <div id="dictionary-view" class="view">
-    <h2>📖 ずかん ＆ ステータス</h2>
+    <h2 style="color: #0288d1;">📖 ずかん ＆ ステータス</h2>
     
     <div class="rpg-status">
       <p class="rpg-level">Lv.<span id="dict-level">1</span></p>
       <p class="rpg-title" id="dict-title">みならい ゆうしゃ</p>
       
-      <p id="dict-exp" style="margin:10px 0 5px 0; font-size:1.1rem; color:#fff;"></p>
-      <div style="background:rgba(255,255,255,0.3); border-radius:5px; height:10px; width:80%; margin: 0 auto; overflow:hidden;">
-        <div id="dict-exp-bar-fill" style="background:#f1c40f; height:100%; width:0%; transition: width 0.5s;"></div>
+      <p id="dict-exp" style="margin:15px 0 5px 0; font-size:1.2rem; font-weight:900;"></p>
+      <div class="exp-bar-container">
+        <div id="dict-exp-bar-fill"></div>
       </div>
-      <p id="dict-exp-tonext" style="margin:5px 0 0 0; font-size:0.9rem; color:#fff;"></p>
+      <p id="dict-exp-tonext" style="margin:5px 0 0 0; font-size:1rem; font-weight:bold;"></p>
     </div>
 
-    <p id="dict-progress" style="font-size: 1.3rem; font-weight: bold; color: #8e44ad;"></p>
+    <p id="dict-progress" style="font-size: 1.3rem; font-weight: bold; color: #ef6c00; margin-bottom: 20px;"></p>
     <div id="dict-container" class="dict-grid"></div>
     <br><br>
-    <button class="btn" style="background-color: #95a5a6; box-shadow:0 6px 0 #7f8c8d;" onclick="switchView('task-view')">もどる</button>
+    <button class="btn" style="background-color: #90a4ae; box-shadow:0 6px 0 #546e7a;" onclick="switchView('task-view')">もどる</button>
   </div>
 
   <div id="nfc-setup-view" class="view">
     <h2>⚙️ NFCタグ URL発行</h2>
     <div id="nfc-url-container"></div>
-    <br><button class="btn" style="background-color: #95a5a6; box-shadow:0 6px 0 #7f8c8d;" onclick="switchView('task-view')">もどる</button>
+    <br><button class="btn" style="background-color: #90a4ae; box-shadow:0 6px 0 #546e7a;" onclick="switchView('task-view')">もどる</button>
   </div>
 
   <div id="camera-view" class="view">
-    <h2 id="target-med-title">お薬の名前</h2>
-    <p>のんだら、からっぽの ふくろ・シートを<br><strong>しゃしん</strong> にとって教えてね！📸</p>
-    <label class="btn btn-camera">
-      📸 しゃしんをとる！
+    <h2 id="target-med-title" style="font-size: 2rem;">お薬の名前</h2>
+    <p style="font-size: 1.3rem; font-weight: bold;">のんだら、からっぽの ふくろ・シートを<br><span style="color:#e64a19; font-size: 1.5rem;">しゃしん</span> にとって教えてね！📸</p>
+    <label class="btn btn-camera" style="width: 100%; height: 100px; line-height: 60px; font-size: 1.8rem;">
+      📸 パシャッ！
       <input type="file" accept="image/*" capture="environment" id="camera-input" style="display: none;">
     </label>
-    <br><br><button onclick="switchView('task-view')" style="background:none; border:none; color:#7f8c8d; text-decoration:underline; font-size: 1rem; cursor: pointer;">もどる</button>
+    <br><br><button onclick="switchView('task-view')" style="background:none; border:none; color:#777; text-decoration:underline; font-size: 1rem; cursor: pointer;">もどる</button>
   </div>
 
   <div id="sending-view" class="view">
-    <h2>はなまる を つけています... 💮</h2>
+    <h2 style="color: #4caf50;">はなまる を つけています... 💮</h2>
     <div class="spinner"></div>
   </div>
 
   <div id="complete-view" class="view">
-    <h1 style="font-size: 3rem; margin-top: 20px;">🎉</h1>
+    <h1 style="font-size: 4rem; margin-top: 20px;">✨🎉✨</h1>
     <div id="new-badge-container"></div>
     <div id="gacha-rarity" class="rarity-label"></div>
     <div id="child-message-box" class="child-comment"></div>
-    <button class="btn" style="background-color: #2ecc71; box-shadow:0 6px 0 #27ae60;" onclick="location.reload()">ぼうけんをつづける</button>
+    <button class="btn" style="background-color: #ff5252; box-shadow:0 6px 0 #d32f2f; width: 100%; font-size: 1.5rem;" onclick="location.reload()">ぼうけんをつづける！</button>
   </div>
 
   <div id="error-view" class="view">
-    <h2>うーん、つながらなかったよ 😢</h2>
+    <h2 style="color: #d32f2f;">うーん、つながらなかったよ 😢</h2>
     <p>電波のよいところで、もういちど試してみてね。</p>
     <div id="error-details" style="color:#c0392b; font-size:0.9rem; margin:20px auto; font-weight:bold; background:#fadbd8; padding:10px; border-radius:10px; max-width:400px; display:none;"></div>
-    <button class="btn" style="background-color: #e74c3c; box-shadow:0 6px 0 #c0392b;" onclick="location.reload()">やりなおす</button>
+    <button class="btn" style="background-color: #90a4ae; box-shadow:0 6px 0 #546e7a;" onclick="location.reload()">やりなおす</button>
   </div>
 
 
@@ -168,21 +181,20 @@
 
     let state = { currentSelectedMedId: null, medList: [] };
 
-    // レアリティごとの経験値（EXP）設定
+    // レアリティごとの経験値（EXP）
     const rarityExp = { "N": 10, "R": 50, "SR": 200, "UR": 1000 };
-    const rpgConstant = 0.683; // 300種類コンプでLv100に達する係数
+    const rpgConstant = 0.683;
 
-    // 12秒のタイムアウト安全診断装置
     setTimeout(() => {
       const loadingView = document.getElementById('loading-view');
       if (loadingView && loadingView.classList.contains('active-view')) {
-        showError("通信タイムアウト。GASのURLかデプロイ設定を今一度ご確認ください。");
+        showError("通信タイムアウト。設定を確認してください。");
       }
     }, 12000);
 
     function showError(message) {
       const details = document.getElementById('error-details');
-      if (details) { details.innerText = "【親御さん向けエラー】: " + message; details.style.display = "block"; }
+      if (details) { details.innerText = message; details.style.display = "block"; }
       switchView('error-view');
     }
 
@@ -193,9 +205,8 @@
       else if (rand < 15) targetRarity = "SR";
       else if (rand < 40) targetRarity = "R";
       else targetRarity = "N";
-      
       const pool = gachaMessages.filter(m => m.rarity === targetRarity);
-      if (pool.length === 0) return {id:0, rarity:"N", text:"ずかんデータ（list.js）を読み込み中！"};
+      if (pool.length === 0) return {id:0, rarity:"N", text:"じゅんび中！"};
       return pool[Math.floor(Math.random() * pool.length)];
     }
 
@@ -236,10 +247,8 @@
     function getRpgStatus() {
       const collectedIds = getCollectedIds();
       const totalExp = calculateTotalExp(collectedIds);
-      
       let level = Math.floor(1 + rpgConstant * Math.sqrt(totalExp));
       if (level < 1) level = 1;
-      
       const titles = [
         { minLevel: 100, title: "🌈 うちゅうの きゅうせいしゅ" },
         { minLevel: 80, title: "👑 でんせつの ゆうしゃ" },
@@ -250,12 +259,10 @@
         { minLevel: 1,  title: "🌱 みならい ゆうしゃ" }
       ];
       const statusTitle = titles.find(t => level >= t.minLevel).title;
-      
       const currentLevelExpMinTotal = calculateExpFromLevel(level);
       const nextLevelExpTotal = calculateExpFromLevel(level + 1);
       const expInLevel = totalExp - currentLevelExpMinTotal;
       const expToNextLevel = nextLevelExpTotal - currentLevelExpMinTotal;
-      
       return { level, title: statusTitle, totalExp, cardCount: collectedIds.length, expInLevel, expToNextLevel };
     }
 
@@ -263,17 +270,15 @@
       const status = getRpgStatus();
       ['top-level', 'dict-level'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = status.level; });
       ['top-title', 'dict-title'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = status.title; });
-      
       const dictExp = document.getElementById('dict-exp');
-      if(dictExp) dictExp.innerHTML = `<strong>EXP: ${Math.floor(status.totalExp)}</strong>`;
-      
+      if(dictExp) dictExp.innerHTML = `EXP: ${Math.floor(status.totalExp)}`;
       const dictExpBar = document.getElementById('dict-exp-bar-fill');
       if(dictExpBar) {
         const percentage = status.expToNextLevel > 0 ? (status.expInLevel / status.expToNextLevel) * 100 : 100;
         dictExpBar.style.width = `${Math.min(percentage, 100)}%`;
       }
       const dictExpToNext = document.getElementById('dict-exp-tonext');
-      if(dictExpToNext) dictExpToNext.innerHTML = `つぎの レベルまで： あと ${Math.floor(status.expToNextLevel - status.expInLevel)} EXP`;
+      if(dictExpToNext) dictExpToNext.innerHTML = `つぎのレベルまで あと ${Math.floor(status.expToNextLevel - status.expInLevel)} EXP`;
     }
 
     function openDictionary() {
@@ -281,14 +286,11 @@
       const container = document.getElementById('dict-container');
       container.innerHTML = '';
       const collected = getCollectedIds();
-      
       document.getElementById('dict-progress').innerText = `あつめた カード： ${collected.length} / ${gachaMessages.length} まい`;
-
       const sortedMessages = [...gachaMessages].sort((a, b) => {
         const order = { "UR": 1, "SR": 2, "R": 3, "N": 4 };
         return order[a.rarity] - order[b.rarity] || a.id - b.id;
       });
-
       sortedMessages.forEach(med => {
         const isUnlocked = collected.includes(med.id);
         const itemDiv = document.createElement('div');
@@ -297,7 +299,7 @@
           itemDiv.innerHTML = `<span class="rarity-tag tag-${med.rarity}">${med.rarity}</span> ${med.text}`;
         } else {
           itemDiv.className = `dict-item dict-locked`;
-          itemDiv.innerHTML = `<span class="rarity-tag" style="background:#bdc3c7;">???</span> ？？？？？？？？`;
+          itemDiv.innerHTML = `<span class="rarity-tag" style="background:#bdbdbd;">???</span> ？？？？？？？？`;
         }
         container.appendChild(itemDiv);
       });
@@ -308,7 +310,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('reset')) {
         localStorage.clear(); 
-        alert("✅ アプリの履歴（飲んだ回数・図鑑・経験値）をすべてリセットしました！");
+        alert("✅ リセットしました！");
         window.location.href = window.location.origin + window.location.pathname;
         return;
       }
@@ -322,12 +324,10 @@
         const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('通信タイムアウト')), 8000));
         const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => res.json());
-
         const response = await Promise.race([fetchPromise, timeoutPromise]);
         if (response && response.status === 'success') {
           state.medList = response.data;
           renderList();
-          
           if (state.currentSelectedMedId) {
             const selectedMed = state.medList.find(m => String(m.id) === String(state.currentSelectedMedId));
             if (selectedMed) {
@@ -335,7 +335,7 @@
               const currentCount = parseInt(localStorage.getItem(`count_${selectedMed.id}_${todayStr}`) || "0", 10);
               const limitCount = parseInt(selectedMed.limitCount || "0", 10);
               if (limitCount > 0 && currentCount >= limitCount) {
-                alert("きょうの ぶん は もうおしまいだよ！✨\nステータスを かくにんしよう！");
+                alert("きょうは もう おしまい！✨\nずかんを みてみよう！");
                 state.currentSelectedMedId = null; 
               } else {
                 openCameraView(selectedMed.id, selectedMed.title);
@@ -344,12 +344,8 @@
             }
           }
           switchView('task-view');
-        } else {
-          showError("データ構造エラー");
         }
-      } catch (error) {
-        showError(error.message);
-      }
+      } catch (error) { showError(error.message); }
     }
 
     function renderList() {
@@ -359,16 +355,15 @@
         const todayStr = new Date().toISOString().slice(0, 10);
         const currentCount = parseInt(localStorage.getItem(`count_${med.id}_${todayStr}`) || "0", 10);
         const limitCount = parseInt(med.limitCount || "0", 10);
-        
         const card = document.createElement('div');
         card.className = 'med-card';
         if (limitCount > 0 && currentCount >= limitCount) {
-          card.innerHTML = `<h3>✅ ${med.title}</h3><p style="color: #2ecc71; font-weight: bold;">きょうは もう おわったよ！🌟</p>`;
+          card.innerHTML = `<h3 style="color:#4caf50;">✅ ${med.title}</h3><p style="color: #4caf50; font-weight: bold;">きょうは おわったよ！🌟</p>`;
         } else {
-          let countBadge = limitCount > 0 ? `<span style="font-size:0.8rem; background:#3498db; color:white; padding:2px 6px; border-radius:5px;">あと ${limitCount - currentCount}回</span>` : '';
+          let countBadge = limitCount > 0 ? `<span style="font-size:0.8rem; background:#ff5252; color:white; padding:4px 8px; border-radius:50px;">あと ${limitCount - currentCount}回</span>` : '';
           card.innerHTML = `
-            <h3>💊 ${med.title} ${countBadge}</h3>
-            <p style="font-size: 0.9rem; color: #7f8c8d;">(${med.time} の おくすり)</p>
+            <h3 style="color:#ff6f00;">💊 ${med.title} ${countBadge}</h3>
+            <p style="font-size: 0.9rem;">(${med.time} の おくすり)</p>
             <button class="btn btn-camera" style="padding:10px 20px; font-size:1.1rem; width:auto;" onclick="openCameraView('${med.id}', '${med.title}')">のんだよ！📸</button>
           `;
         }
@@ -384,9 +379,9 @@
         const card = document.createElement('div');
         card.className = 'med-card';
         card.innerHTML = `
-          <h3 style="margin-top: 0;">💊 ${med.title}</h3>
+          <h3>💊 ${med.title}</h3>
           <input type="text" class="url-input" value="${baseUrl}?id=${med.id}" readonly id="nfc-url-${med.id}">
-          <br><button class="btn btn-copy" onclick="copyToClipboard('${med.id}')">URLをコピー</button>
+          <br><button class="btn btn-copy" onclick="copyToClipboard('${medId}')">コピー</button>
         `;
         container.appendChild(card);
       });
@@ -396,8 +391,7 @@
     function copyToClipboard(medId) {
       const copyText = document.getElementById(`nfc-url-${medId}`);
       copyText.select();
-      copyText.setSelectionRange(0, 99999);
-      navigator.clipboard.writeText(copyText.value).then(() => alert("コピーしました！"));
+      navigator.clipboard.writeText(copyText.value).then(() => alert("コピーしたよ！"));
     }
 
     function openCameraView(medId, medTitle) {
@@ -430,64 +424,49 @@
     document.getElementById('camera-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
-
       switchView('sending-view');
       const base64Image = await resizeAndConvertGachaImage(file);
       const payload = { action: 'log', id: state.currentSelectedMedId, name: 'ユーザー', image: base64Image };
-
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
       const fetchPromise = fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-
       try {
         await Promise.race([fetchPromise, timeoutPromise]);
-
         const todayStr = new Date().toISOString().slice(0, 10);
         const currentCount = parseInt(localStorage.getItem(`count_${state.currentSelectedMedId}_${todayStr}`) || "0", 10);
         localStorage.setItem(`count_${state.currentSelectedMedId}_${todayStr}`, (currentCount + 1).toString());
-
         const gachaResult = drawGacha();
         const isNew = saveToCollection(gachaResult.id);
         const earnedExp = rarityExp[gachaResult.rarity]; 
-
         const rarityBox = document.getElementById('gacha-rarity');
         const messageBox = document.getElementById('child-message-box');
         const badgeContainer = document.getElementById('new-badge-container');
-        
         if (isNew) {
           badgeContainer.innerHTML = `<div class="new-badge">✨ NEW! ${earnedExp} EXP ゲット！ ✨</div>`;
         } else {
           badgeContainer.innerHTML = '';
         }
-
         if (gachaResult.rarity === 'UR') {
-          rarityBox.innerHTML = '<span style="color:#ff4500;">ウルトラレア！！ 【 UR 】</span>';
-          messageBox.style.backgroundColor = '#ffd700'; messageBox.style.color = '#d35400'; messageBox.style.border = '4px solid #ff4500';
+          rarityBox.innerHTML = '<span style="color:#d32f2f; font-size:2.5rem;">究極レア！【 UR 】</span>';
+          messageBox.style.backgroundColor = '#fff9c4'; messageBox.style.color = '#d32f2f'; messageBox.style.border = '5px solid #fbc02d';
         } else if (gachaResult.rarity === 'SR') {
-          rarityBox.innerHTML = '<span style="color:#e67e22;">スーパーレア！ 【 SR 】</span>';
-          messageBox.style.backgroundColor = '#f8c471'; messageBox.style.color = '#c0392b'; messageBox.style.border = '2px solid #e67e22';
+          rarityBox.innerHTML = '<span style="color:#7b1fa2;">超レア！【 SR 】</span>';
+          messageBox.style.backgroundColor = '#f3e5f5'; messageBox.style.color = '#7b1fa2'; messageBox.style.border = '3px solid #ba68c8';
         } else if (gachaResult.rarity === 'R') {
-          rarityBox.innerHTML = '<span style="color:#1abc9c;">レア 【 R 】</span>';
-          messageBox.style.backgroundColor = '#e8f8f5'; messageBox.style.color = '#16a085'; messageBox.style.border = '2px solid #1abc9c';
+          rarityBox.innerHTML = '<span style="color:#0277bd;">レア！【 R 】</span>';
+          messageBox.style.backgroundColor = '#e1f5fe'; messageBox.style.color = '#0277bd'; messageBox.style.border = '2px solid #81d4fa';
         } else {
-          rarityBox.innerHTML = '<span style="color:#e67e22; font-size:1.5rem;">ノーマル 【 N 】</span>';
-          messageBox.style.backgroundColor = '#fff3e0'; messageBox.style.color = '#d35400'; messageBox.style.border = '2px solid #e67e22';
+          rarityBox.innerHTML = '<span style="color:#ef6c00;">ノーマル【 N 】</span>';
+          messageBox.style.backgroundColor = '#fffde7'; messageBox.style.color = '#ef6c00'; messageBox.style.border = '2px solid #ffcc80';
         }
-        
         messageBox.innerHTML = `
-          <strong>${gachaResult.text}</strong>
-          <p style="margin:10px 0 0 0; font-size:1.1rem; color:#2c3e50;">＋ ${earnedExp} EXP ゲット！</p>
+          <div style="font-size:1.6rem; margin-bottom:10px;">${gachaResult.text}</div>
+          <div style="font-size:1.2rem; color:#1a237e; background:white; display:inline-block; padding:5px 15px; border-radius:50px;">＋ ${earnedExp} EXP ゲット！</div>
         `;
-
         switchView('complete-view');
         if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
         updateRpgDisplay();
-
-      } catch (error) {
-        showError("送信失敗: " + error.message);
-      } finally {
-        e.target.value = '';
-      }
+      } catch (error) { showError(error.message); } finally { e.target.value = ''; }
     });
   </script>
 </body>
