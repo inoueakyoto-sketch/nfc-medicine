@@ -57,7 +57,7 @@
 <body>
 
   <div id="loading-view" class="view active-view">
-    <h2>じじゅんび中... ⏳</h2>
+    <h2>じゅんび中... ⏳</h2>
     <div class="spinner"></div>
   </div>
 
@@ -98,7 +98,7 @@
 
   <div id="sending-view" class="view">
     <h2>はなまる を つけています... 💮</h2>
-    <p>（※iPhoneでは「許可」ボタンを押してね）</p>
+    <p>（しゃしんを 親に おくっているよ ✉️）</p>
     <div class="spinner"></div>
   </div>
 
@@ -107,7 +107,6 @@
     <h2>すごーい！！<br>よくできました！🌟</h2>
     
     <div id="child-message-box" class="child-comment"></div>
-    <p style="font-size: 0.9rem; color: #7f8c8d; margin-top:-10px;">証拠（しゃしん）を ほぞんしたよ！🖼️</p>
 
     <button class="btn" style="background-color: #2ecc71; box-shadow:0 6px 0 #27ae60;" onclick="location.reload()">最初にもどる</button>
   </div>
@@ -133,6 +132,7 @@
       { rarity: "N", text: "お薬のめたね！えらい！💮" },
       { rarity: "N", text: "ニコニコな 1日に なりますように！😊" },
       { rarity: "N", text: "バッチリだよ！そのちょうし！👍" },
+      { rarity: "N", text: "しゃしん、上手にとれたね！📸" },
       { rarity: "N", text: "きょうも はなまる だよ！💮" },
       { rarity: "N", text: "ごはんも モリモリ たべようね！🍚" },
       { rarity: "N", text: "きょうは どんな たのしいことがあるかな？🎈" },
@@ -148,7 +148,7 @@
 
       { rarity: "SR", text: "【SR】でんせつの けん を てにいれた！⚔️ きょうは むてきだ！" },
       { rarity: "SR", text: "【SR】ミラクルパワー ぜんかい！🔥 なんにでも ちょうせんできるぞ！" },
-      { rarity: "SR", text: "【SR】スーパー・ラッキー！🌟 きょうは ほしに ね願いごとをしよう！" },
+      { rarity: "SR", text: "【SR】スーパー・ラッキー！🌟 きょうは ほしに ねがいごとをしよう！" },
       { rarity: "SR", text: "【SR】だいはっけん！💎 きみは てんさい かもしれない！" },
 
       { rarity: "UR", text: "🌈【超激レア】🌈 うちゅういち の がんばりやさん！ 👑✨" },
@@ -287,36 +287,64 @@
       switchView('camera-view');
     }
 
-    // =========================================================
-    // ★証拠残し（強制ダウンロード）処理
-    // =========================================================
-    function saveImageToLocal(file) {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      // ファイル名に日時を入れる
-      const dateStr = new Date().toLocaleString('ja-JP').replace(/[\/\s:]/g, '-');
-      a.download = `おくすり証拠写真_${dateStr}.jpg`; 
-      document.body.appendChild(a);
-      a.click(); // これでダウンロードが始まります
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    // ★【新機能】画像をCanvasを使って幅800px・JPEG品質0.5に自動圧縮してBase64にする関数
+    function resizeAndConvertGachaImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max_size = 800; // iPhoneのフリーズを防ぐため最大サイズを800pxに制限
+            
+            if (width > height) {
+              if (width > max_size) { height *= max_size / width; width = max_size; }
+            } else {
+              if (height > max_size) { width *= max_size / height; height = max_size; }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 品質0.5のJPEGとして圧縮
+            const base64Data = canvas.toDataURL('image/jpeg', 0.5);
+            resolve(base64Data.split(',')[1]); // 純粋なデータ部分のみを返す
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
     }
-    // =========================================================
 
     // カメラ撮影後の処理
     document.getElementById('camera-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      // ★証拠写真を端末に保存（iPhoneではここでポップアップが出ます）
-      saveImageToLocal(file);
-
+      // 「はなまるをつけています...」画面へ切り替え
       switchView('sending-view');
 
-      const postDataUrl = `${GAS_URL}?action=log&id=${state.currentSelectedMedId}&name=${encodeURIComponent('ユーザー')}`;
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
-      const fetchPromise = fetch(postDataUrl, { method: 'POST', mode: 'no-cors' });
+      // 画像の圧縮処理を実行
+      const base64Image = await resizeAndConvertGachaImage(file);
+
+      // JSONデータとしてまとめてPOST送信
+      const payload = {
+        action: 'log',
+        id: state.currentSelectedMedId,
+        name: 'ユーザー',
+        image: base64Image
+      };
+
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)); // 画像送信のため10秒に緩和
+      const fetchPromise = fetch(GAS_URL, { 
+        method: 'POST', 
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
 
       try {
         await Promise.race([fetchPromise, timeoutPromise]);
