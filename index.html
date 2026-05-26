@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
   <title>おくすりチェック！💊</title>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
@@ -117,7 +121,6 @@
     <button class="btn" style="background-color: #e74c3c; box-shadow:0 6px 0 #c0392b;" onclick="location.reload()">やりなおす</button>
   </div>
 
-
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwy1VKCy0ud87bkvtomzsNkLrwJWE8LUI10IssxVPGr2GIgKaB1Xn1m8YDcLngC5xYywA/exec";
 
@@ -126,7 +129,6 @@
       medList: []
     };
 
-    // ================= ガチャメッセージデータ =================
     const gachaMessages = [
       { rarity: "N", text: "きょうも げんきに すごそうね！☀️" },
       { rarity: "N", text: "お薬のめたね！えらい！💮" },
@@ -163,11 +165,8 @@
       else if (rand < 15) targetRarity = "SR";
       else if (rand < 40) targetRarity = "R";
       else targetRarity = "N";
-      
-      const filteredMessages = gachaMessages.filter(m => m.rarity === targetRarity);
-      return filteredMessages[Math.floor(Math.random() * filteredMessages.length)];
+      return gachaMessages.filter(m => m.rarity === targetRarity)[Math.floor(Math.random() * gachaMessages.filter(m => m.rarity === targetRarity).length)];
     }
-    // =========================================================
 
     function switchView(viewId) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
@@ -177,6 +176,16 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
+      
+      // ★追加：リセット機能の判定
+      if (urlParams.has('reset')) {
+        localStorage.clear(); // スマホ内のアプリ記録を全消去
+        alert("✅ アプリの履歴（今日飲んだ回数など）をすべてリセットしました！\nOKを押すと最初の画面に戻ります。");
+        // パラメータを消してトップページへ戻す
+        window.location.href = window.location.origin + window.location.pathname;
+        return;
+      }
+
       if (urlParams.has('id')) {
         state.currentSelectedMedId = urlParams.get('id');
       }
@@ -275,7 +284,7 @@
       copyText.select();
       copyText.setSelectionRange(0, 99999);
       navigator.clipboard.writeText(copyText.value).then(() => {
-        alert("URLをコピーしました！NFC書き込みアプリに貼り付けてください。");
+        alert("URLをコピーしました！");
       }).catch(err => {
         alert("手動で選択してコピーしてください。");
       });
@@ -287,7 +296,6 @@
       switchView('camera-view');
     }
 
-    // ★【新機能】画像をCanvasを使って幅800px・JPEG品質0.5に自動圧縮してBase64にする関数
     function resizeAndConvertGachaImage(file) {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -297,7 +305,7 @@
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
-            const max_size = 800; // iPhoneのフリーズを防ぐため最大サイズを800pxに制限
+            const max_size = 800; 
             
             if (width > height) {
               if (width > max_size) { height *= max_size / width; width = max_size; }
@@ -309,9 +317,8 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // 品質0.5のJPEGとして圧縮
             const base64Data = canvas.toDataURL('image/jpeg', 0.5);
-            resolve(base64Data.split(',')[1]); // 純粋なデータ部分のみを返す
+            resolve(base64Data.split(',')[1]); 
           };
           img.src = e.target.result;
         };
@@ -319,18 +326,13 @@
       });
     }
 
-    // カメラ撮影後の処理
     document.getElementById('camera-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      // 「はなまるをつけています...」画面へ切り替え
       switchView('sending-view');
-
-      // 画像の圧縮処理を実行
       const base64Image = await resizeAndConvertGachaImage(file);
 
-      // JSONデータとしてまとめてPOST送信
       const payload = {
         action: 'log',
         id: state.currentSelectedMedId,
@@ -338,7 +340,7 @@
         image: base64Image
       };
 
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)); // 画像送信のため10秒に緩和
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
       const fetchPromise = fetch(GAS_URL, { 
         method: 'POST', 
         mode: 'no-cors',
@@ -349,12 +351,10 @@
       try {
         await Promise.race([fetchPromise, timeoutPromise]);
 
-        // カウントを+1
         const todayStr = new Date().toISOString().slice(0, 10);
         const currentCount = parseInt(localStorage.getItem(`count_${state.currentSelectedMedId}_${todayStr}`) || "0", 10);
         localStorage.setItem(`count_${state.currentSelectedMedId}_${todayStr}`, (currentCount + 1).toString());
 
-        // ガチャメッセージ
         const gachaResult = drawGacha();
         const messageBox = document.getElementById('child-message-box');
         
