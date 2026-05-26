@@ -495,6 +495,28 @@
       { id: 300, rarity: "UR", text: "🌈【UR】ぼうけん は これからも つづく！ きみ は えいえん の ゆうしゃ だ！ 👑🎉" }
     ]; // ★ここで配列をしっかりと閉じます。
 
+  // ================= ここから下のプログラムをすべて上書き =================
+
+    // 【安全装置】もし12秒以上ぐるぐるが続いたら、強制的にエラー画面を出して原因を表示する
+    setTimeout(() => {
+      const loadingView = document.getElementById('loading-view');
+      if (loadingView && loadingView.classList.contains('active-view')) {
+        showError("通信がタイムアウトしました。電波が悪いか、GASのURLが間違っている可能性があります。");
+      }
+    }, 12000);
+
+    function showError(message) {
+      document.getElementById('error-view').innerHTML = `
+        <h2>うーん、つながらなかったよ 😢</h2>
+        <p>電波のよいところで、もういちど試してみてね。</p>
+        <p style="color:#c0392b; font-size:0.9rem; margin-top:20px; font-weight:bold; background:#fadbd8; padding:10px; border-radius:10px;">
+          【親御さん向け・エラー原因】<br>${message}
+        </p>
+        <button class="btn" style="background-color: #e74c3c; box-shadow:0 6px 0 #c0392b;" onclick="location.reload()">やりなおす</button>
+      `;
+      switchView('error-view');
+    }
+
     function drawGacha() {
       const rand = Math.random() * 100;
       let targetRarity = "N";
@@ -508,13 +530,26 @@
     }
 
     function switchView(viewId) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
-      const target = document.getElementById(viewId);
-      if(target) target.classList.add('active-view');
+      try {
+        const views = document.querySelectorAll('.view');
+        for (let i = 0; i < views.length; i++) {
+          views[i].classList.remove('active-view');
+        }
+        const target = document.getElementById(viewId);
+        if (target) target.classList.add('active-view');
+      } catch(e) {
+        console.error("画面切り替えエラー:", e);
+      }
     }
 
     // ================= RPGレベル＆コレクション処理 =================
-    function getCollectedIds() { return JSON.parse(localStorage.getItem('gacha_collection') || '[]'); }
+    function getCollectedIds() {
+      try {
+        return JSON.parse(localStorage.getItem('gacha_collection') || '[]');
+      } catch(e) {
+        return []; // データが壊れていた場合は空に戻す
+      }
+    }
 
     function saveToCollection(id) {
       const collected = getCollectedIds();
@@ -526,9 +561,8 @@
       return false; 
     }
 
-    // カードの数に応じた称号の計算
     function getRpgStatus() {
-      const level = getCollectedIds().length + 1; // 1枚もなくてもLv1
+      const level = getCollectedIds().length + 1;
       let title = "むらびと";
       if (level >= 100) title = "🌈 うちゅうの きゅうせいしゅ";
       else if (level >= 80) title = "👑 でんせつの ゆうしゃ";
@@ -543,10 +577,14 @@
 
     function updateRpgDisplay() {
       const status = getRpgStatus();
-      document.getElementById('top-level').innerText = status.level;
-      document.getElementById('top-title').innerText = status.title;
-      document.getElementById('dict-level').innerText = status.level;
-      document.getElementById('dict-title').innerText = status.title;
+      const topLevel = document.getElementById('top-level');
+      if(topLevel) topLevel.innerText = status.level;
+      const topTitle = document.getElementById('top-title');
+      if(topTitle) topTitle.innerText = status.title;
+      const dictLevel = document.getElementById('dict-level');
+      if(dictLevel) dictLevel.innerText = status.level;
+      const dictTitle = document.getElementById('dict-title');
+      if(dictTitle) dictTitle.innerText = status.title;
     }
 
     function openDictionary() {
@@ -579,35 +617,44 @@
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('reset')) {
-        localStorage.clear(); 
-        alert("✅ アプリの履歴（飲んだ回数・図鑑レベル）をすべてリセットしました！");
-        window.location.href = window.location.origin + window.location.pathname;
-        return;
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('reset')) {
+          localStorage.clear(); 
+          alert("✅ アプリの履歴（飲んだ回数・図鑑レベル）をすべてリセットしました！");
+          window.location.href = window.location.origin + window.location.pathname;
+          return;
+        }
+        
+        updateRpgDisplay();
+        
+        if (urlParams.has('id')) {
+          state.currentSelectedMedId = urlParams.get('id');
+        }
+        await loadMedicationList();
+      } catch (e) {
+        showError("起動中にエラーが発生しました: " + e.message);
       }
-      
-      updateRpgDisplay(); // ロード時にレベル表示更新
-      
-      if (urlParams.has('id')) {
-        state.currentSelectedMedId = urlParams.get('id');
-      }
-      await loadMedicationList();
     });
 
     async function loadMedicationList() {
-      const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
-      const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => res.json());
-
       try {
+        const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('タイムアウト（通信が遅すぎます）')), 8000));
+        
+        const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => {
+          if (!res.ok) throw new Error(`サーバーエラー (ステータス: ${res.status})`);
+          return res.json();
+        });
+
         const response = await Promise.race([fetchPromise, timeoutPromise]);
-        if (response.status === 'success') {
+        
+        if (response && response.status === 'success') {
           state.medList = response.data;
           renderList();
           
           if (state.currentSelectedMedId) {
-            const selectedMed = state.medList.find(m => m.id === state.currentSelectedMedId);
+            const selectedMed = state.medList.find(m => String(m.id) === String(state.currentSelectedMedId));
             if (selectedMed) {
               const todayStr = new Date().toISOString().slice(0, 10);
               const currentCount = parseInt(localStorage.getItem(`count_${selectedMed.id}_${todayStr}`) || "0", 10);
@@ -623,10 +670,10 @@
           }
           switchView('task-view');
         } else {
-          switchView('error-view');
+          throw new Error(response ? response.message : "データが取得できませんでした");
         }
       } catch (error) {
-        switchView('error-view');
+        showError("通信エラー: " + error.message);
       }
     }
 
@@ -689,49 +736,53 @@
     }
 
     function resizeAndConvertGachaImage(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            const canvas = document.createElement('canvas');
-            let width = img.width; let height = img.height;
-            const max = 800; 
-            if (width > height) { if (width > max) { height *= max / width; width = max; } } 
-            else { if (height > max) { width *= max / height; height = max; } }
-            canvas.width = width; canvas.height = height;
-            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]); 
+      return new Promise((resolve, reject) => {
+        try {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+              const canvas = document.createElement('canvas');
+              let width = img.width; let height = img.height;
+              const max = 800; 
+              if (width > height) { if (width > max) { height *= max / width; width = max; } } 
+              else { if (height > max) { width *= max / height; height = max; } }
+              canvas.width = width; canvas.height = height;
+              canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]); 
+            };
+            img.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
+            img.src = e.target.result;
           };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+          reader.onerror = () => reject(new Error("ファイルの読み込みに失敗しました"));
+          reader.readAsDataURL(file);
+        } catch(e) {
+          reject(e);
+        }
       });
     }
 
     document.getElementById('camera-input').addEventListener('change', async function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      switchView('sending-view');
-      const base64Image = await resizeAndConvertGachaImage(file);
-      const payload = { action: 'log', id: state.currentSelectedMedId, name: 'ユーザー', image: base64Image };
-
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
-      const fetchPromise = fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-
       try {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        switchView('sending-view');
+        const base64Image = await resizeAndConvertGachaImage(file);
+        const payload = { action: 'log', id: state.currentSelectedMedId, name: 'ユーザー', image: base64Image };
+
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('送信タイムアウト（通信が遅すぎます）')), 10000));
+        const fetchPromise = fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+
         await Promise.race([fetchPromise, timeoutPromise]);
 
         const todayStr = new Date().toISOString().slice(0, 10);
         const currentCount = parseInt(localStorage.getItem(`count_${state.currentSelectedMedId}_${todayStr}`) || "0", 10);
         localStorage.setItem(`count_${state.currentSelectedMedId}_${todayStr}`, (currentCount + 1).toString());
 
-        // ガチャを引いて図鑑に保存＆レベルアップ判定
         const gachaResult = drawGacha();
         const isNew = saveToCollection(gachaResult.id);
         
-        // 演出の反映
         const rarityBox = document.getElementById('gacha-rarity');
         const messageBox = document.getElementById('child-message-box');
         const badgeContainer = document.getElementById('new-badge-container');
@@ -764,7 +815,7 @@
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
       } catch (error) {
-        switchView('error-view');
+        showError("送信エラー: " + error.message);
       } finally {
         e.target.value = '';
       }
