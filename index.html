@@ -17,7 +17,7 @@
     body {
       margin: 0; padding: 0;
       font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-      background-color: #fff9e6; color: #333; /* 全体を明るいクリームイエローに */
+      background-color: #fff9e6; color: #333; 
       text-align: center;
     }
     .view { display: none; padding: 20px; min-height: 100vh; }
@@ -52,22 +52,25 @@
       border: 2px solid #ffe0b2;
     }
     .url-input { width: 100%; padding: 10px; font-size: 0.9rem; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; color: #777; }
+    
+    /* 設定用の入力欄項目 */
+    .setup-label { font-weight: bold; color: #5d4037; display: block; text-align: left; margin: 15px auto 5px auto; max-width: 400px; font-size: 1.1rem; }
+    .setup-input { width: 100%; max-width: 400px; padding: 12px; font-size: 1.1rem; border: 2px solid #ffb74d; border-radius: 10px; margin-bottom: 15px; }
 
-    /* ★ポップ＆視認性バツグンのステータス画面 */
     .rpg-status {
-      background: linear-gradient(135deg, #fff176, #ffb74d); /* 明るいサンシャイン・グラデーション */
-      color: #1a237e; /* 文字色は濃いネイビーで読みやすく */
+      background: linear-gradient(135deg, #fff176, #ffb74d); 
+      color: #1a237e; 
       padding: 20px; border-radius: 25px; margin: 10px auto 30px auto;
       max-width: 400px; box-shadow: 0 10px 20px rgba(255,167,38,0.3);
-      border: 4px solid #ffffff; /* 白い太枠で区切りをはっきり */
+      border: 4px solid #ffffff; 
     }
     .rpg-level { 
       font-size: 2.8rem; font-weight: 900; color: #d84315; margin: 0; 
-      text-shadow: 2px 2px 0px white; /* 白い縁取り効果 */
+      text-shadow: 2px 2px 0px white; 
     } 
     .rpg-title { 
       font-size: 1.6rem; margin: 5px 0 0 0; font-weight: 900; color: #1a237e;
-      text-shadow: 2px 2px 0px white; /* 称号も白い縁取りでクッキリ */
+      text-shadow: 2px 2px 0px white; 
     }
     
     .rarity-label { font-size: 2rem; font-weight: 900; margin: 10px 0; }
@@ -91,7 +94,6 @@
     .rarity-tag { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.9rem; margin-right: 12px; color: white; font-weight: 900; }
     .tag-N { background-color: #ffa726; } .tag-R { background-color: #29b6f6; } .tag-SR { background-color: #ba68c8; } .tag-UR { background-color: #fbc02d; color: #333; }
 
-    /* EXPバーのパステル化 */
     .exp-bar-container { background:rgba(255,255,255,0.5); border-radius:50px; height:15px; width:85%; margin: 10px auto; overflow:hidden; border: 2px solid white; }
     #dict-exp-bar-fill { background: linear-gradient(90deg, #ff4081, #f48fb1); height:100%; width:0%; transition: width 0.8s ease-out; }
   </style>
@@ -140,7 +142,15 @@
   </div>
 
   <div id="nfc-setup-view" class="view">
-    <h2>⚙️ NFCタグ URL発行</h2>
+    <h2>⚙️ おうちのかた用 せってい</h2>
+    
+    <div style="background: white; border-radius: 20px; padding: 20px; margin: 15px auto; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: left; border: 2px solid #ffb74d;">
+      <label class="setup-label" for="custom-filename-input">📸 ドライブ保存時のファイル名（文字設定）</label>
+      <p style="font-size:0.85rem; color:#777; margin:0 0 10px 0;">空欄にすると従来通り「お子様のなまえ」になります。変更すると「日付_時間_【設定した文字】.jpg」になります。</p>
+      <input type="text" id="custom-filename-input" class="setup-input" placeholder="例: あさのくすり, たろう_あさ" onchange="saveCustomFileName()">
+    </div>
+
+    <h3 style="color:#ff6f00; margin-top:30px;">🔗 NFCタグ URL発行</h3>
     <div id="nfc-url-container"></div>
     <br><button class="btn" style="background-color: #90a4ae; box-shadow:0 6px 0 #546e7a;" onclick="switchView('task-view')">もどる</button>
   </div>
@@ -181,7 +191,6 @@
 
     let state = { currentSelectedMedId: null, medList: [] };
 
-    // レアリティごとの経験値（EXP）
     const rarityExp = { "N": 10, "R": 50, "SR": 200, "UR": 1000 };
     const rpgConstant = 0.683;
 
@@ -315,9 +324,21 @@
         return;
       }
       updateRpgDisplay();
+      
+      // ★保存されているカスタムファイル名を読み込んで入力欄にセットする
+      const savedName = localStorage.getItem('custom_filename') || '';
+      const inputEl = document.getElementById('custom-filename-input');
+      if (inputEl) inputEl.value = savedName;
+
       if (urlParams.has('id')) state.currentSelectedMedId = urlParams.get('id');
       await loadMedicationList();
     });
+
+    // ★カスタムファイル名を保存する関数
+    function saveCustomFileName() {
+      const val = document.getElementById('custom-filename-input').value.trim();
+      localStorage.setItem('custom_filename', val);
+    }
 
     async function loadMedicationList() {
       try {
@@ -381,7 +402,7 @@
         card.innerHTML = `
           <h3>💊 ${med.title}</h3>
           <input type="text" class="url-input" value="${baseUrl}?id=${med.id}" readonly id="nfc-url-${med.id}">
-          <br><button class="btn btn-copy" onclick="copyToClipboard('${medId}')">コピー</button>
+          <br><button class="btn btn-copy" onclick="copyToClipboard('${med.id}')">コピー</button>
         `;
         container.appendChild(card);
       });
@@ -426,7 +447,18 @@
       if (!file) return;
       switchView('sending-view');
       const base64Image = await resizeAndConvertGachaImage(file);
-      const payload = { action: 'log', id: state.currentSelectedMedId, name: 'ユーザー', image: base64Image };
+      
+      // ★LocalStorageに保存されているカスタム名をGASへ送信するデータに含める
+      const customName = localStorage.getItem('custom_filename') || '';
+      
+      const payload = { 
+        action: 'log', 
+        id: state.currentSelectedMedId, 
+        name: 'ユーザー', 
+        image: base64Image,
+        customFileName: customName // ★これをついか
+      };
+      
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
       const fetchPromise = fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
       try {
