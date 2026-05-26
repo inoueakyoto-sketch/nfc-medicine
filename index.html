@@ -9,6 +9,9 @@
   
   <title>おくすり ぼうけんのしょ！💊</title>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <script src="list.js"></script>
+  
   <style>
     * { box-sizing: border-box; }
     body {
@@ -49,14 +52,15 @@
     }
     .url-input { width: 100%; padding: 10px; font-size: 0.9rem; background-color: #f1f2f6; border: 1px solid #dcdde1; border-radius: 5px; color: #7f8c8d; }
 
-    /* RPGシステム用のスタイル */
+    /* ★RPGステータス表示：緑〜青のポップな大冒険グラデーション */
     .rpg-status {
-      background: linear-gradient(135deg, #2c3e50, #34495e);
-      color: white; padding: 15px; border-radius: 15px; margin: 10px auto 30px auto;
-      max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 2px solid #f1c40f;
+      background: linear-gradient(135deg, #34e89e, #0f3443); 
+      color: white; 
+      padding: 15px; border-radius: 15px; margin: 10px auto 30px auto;
+      max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 3px solid #f1c40f; 
     }
-    .rpg-level { font-size: 1.8rem; font-weight: 900; color: #f1c40f; margin: 0; text-shadow: 1px 1px 2px black;}
-    .rpg-title { font-size: 1.2rem; margin: 5px 0 0 0; font-weight: bold; }
+    .rpg-level { font-size: 2.2rem; font-weight: 900; color: #f1c40f; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);} 
+    .rpg-title { font-size: 1.4rem; margin: 5px 0 0 0; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
     
     .rarity-label { font-size: 2rem; font-weight: 900; margin: 10px 0; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
     .child-comment { font-size: 1.4rem; font-weight: bold; margin: 10px auto 20px auto; padding: 20px; border-radius: 15px; max-width: 400px;}
@@ -95,7 +99,6 @@
     </div>
 
     <button class="btn btn-dictionary" onclick="openDictionary()">📖 どうぐ ＆ なかま ずかん</button>
-
     <div id="med-list-container"></div>
     
     <div style="margin-top: 50px; border-top: 2px dashed #ccc; padding-top: 20px;">
@@ -109,11 +112,15 @@
     <div class="rpg-status">
       <p class="rpg-level">Lv.<span id="dict-level">1</span></p>
       <p class="rpg-title" id="dict-title">みならい ゆうしゃ</p>
-      <p style="margin:10px 0 0 0; font-size:0.9rem;">カードを あつめると レベルがあがるぞ！</p>
+      
+      <p id="dict-exp" style="margin:10px 0 5px 0; font-size:1.1rem; color:#fff;"></p>
+      <div style="background:rgba(255,255,255,0.3); border-radius:5px; height:10px; width:80%; margin: 0 auto; overflow:hidden;">
+        <div id="dict-exp-bar-fill" style="background:#f1c40f; height:100%; width:0%; transition: width 0.5s;"></div>
+      </div>
+      <p id="dict-exp-tonext" style="margin:5px 0 0 0; font-size:0.9rem; color:#fff;"></p>
     </div>
 
     <p id="dict-progress" style="font-size: 1.3rem; font-weight: bold; color: #8e44ad;"></p>
-    
     <div id="dict-container" class="dict-grid"></div>
     <br><br>
     <button class="btn" style="background-color: #95a5a6; box-shadow:0 6px 0 #7f8c8d;" onclick="switchView('task-view')">もどる</button>
@@ -142,378 +149,40 @@
 
   <div id="complete-view" class="view">
     <h1 style="font-size: 3rem; margin-top: 20px;">🎉</h1>
-    
     <div id="new-badge-container"></div>
     <div id="gacha-rarity" class="rarity-label"></div>
     <div id="child-message-box" class="child-comment"></div>
-
     <button class="btn" style="background-color: #2ecc71; box-shadow:0 6px 0 #27ae60;" onclick="location.reload()">ぼうけんをつづける</button>
   </div>
 
   <div id="error-view" class="view">
     <h2>うーん、つながらなかったよ 😢</h2>
     <p>電波のよいところで、もういちど試してみてね。</p>
+    <div id="error-details" style="color:#c0392b; font-size:0.9rem; margin:20px auto; font-weight:bold; background:#fadbd8; padding:10px; border-radius:10px; max-width:400px; display:none;"></div>
     <button class="btn" style="background-color: #e74c3c; box-shadow:0 6px 0 #c0392b;" onclick="location.reload()">やりなおす</button>
   </div>
+
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwy1VKCy0ud87bkvtomzsNkLrwJWE8LUI10IssxVPGr2GIgKaB1Xn1m8YDcLngC5xYywA/exec";
 
     let state = { currentSelectedMedId: null, medList: [] };
 
-    // ================= RPGガチャコレクション（初期50種類・親御さんが自由に増やせます！） =================
-    // rarity: "N"(60%), "R"(25%), "SR"(12%), "UR"(3%)
-    const gachaMessages = [
-      // ================= 1番〜100番 =================
-      
-      // --- N: はじまりの村と小さな冒険（60種） ---
-      { id: 1, rarity: "N", text: "やくそう を みつけた！🌿 たいりょくが かいふくした！" },
-      { id: 2, rarity: "N", text: "きの ぼう を てにいれた！🦯 ぼうけんの はじまりだ！" },
-      { id: 3, rarity: "N", text: "かわの たて を そうびした！🛡️ ちょっぴり あんしん！" },
-      { id: 4, rarity: "N", text: "おいしい みず を のんだ！💧 のどが うるおった！" },
-      { id: 5, rarity: "N", text: "ちいさな メダル を はっけん！🪙 なにか いいこと あるかも？" },
-      { id: 6, rarity: "N", text: "たびびとの ふく に きがえた！👕 さあ、でかけよう！" },
-      { id: 7, rarity: "N", text: "きのぼりの くつ を ゲット！👟 スイスイ のぼれるぞ！" },
-      { id: 8, rarity: "N", text: "あかるい たいまつ を つけた！🔥 くらい みち も へっちゃら！" },
-      { id: 9, rarity: "N", text: "まほうの パン を たべた！🍞 おなかが いっぱい！" },
-      { id: 10, rarity: "N", text: "スライム が なかまになりたそうにしている！💧" },
-      { id: 11, rarity: "N", text: "どうの つるぎ を みがいた！🗡️ ピカピカになった！" },
-      { id: 12, rarity: "N", text: "たからばこ から 10ゴールド！💰 やったね！" },
-      { id: 13, rarity: "N", text: "はしりやすい ズボン を はいた！👖 足が かるい！" },
-      { id: 14, rarity: "N", text: "きんの すず が チリンとなった！🔔 まもりの パワー！" },
-      { id: 15, rarity: "N", text: "ちず を ひらいて みちを かくにん！🗺️ まいご に ならないぞ！" },
-      { id: 16, rarity: "N", text: "あきびん に キラキラをつめた！✨ きれいだなあ！" },
-      { id: 17, rarity: "N", text: "げんきが でる おまじない！🪄 えがおが いちばん！" },
-      { id: 18, rarity: "N", text: "ふわふわの ベッド で きゅうけい！🛏️ また あした がんばろう！" },
-      { id: 19, rarity: "N", text: "てづくりの おべんとう で かいふく！🍙 ママ・パパの あいじょう たっぷり！" },
-      { id: 20, rarity: "N", text: "みちばたの おはな が さいた！🌻 いい におい！" },
-      { id: 21, rarity: "N", text: "まほうの いし を ゲット！🪨 ほんのり あたたかい！" },
-      { id: 22, rarity: "N", text: "たびの しょうにん と あいさつした！🤝" },
-      { id: 23, rarity: "N", text: "むらの ひとに ほめられた！😊 えへへ、うれしいな！" },
-      { id: 24, rarity: "N", text: "こいぬ が ついてきた！🐶 ワンワン！" },
-      { id: 25, rarity: "N", text: "こねこ が すりすり してきた！🐱 ニャー！" },
-      { id: 26, rarity: "N", text: "あおい とり が うたっている！🐦 ピヨピヨ♪" },
-      { id: 27, rarity: "N", text: "みずうみ で さかなが はねた！🐟 ピチャッ！" },
-      { id: 28, rarity: "N", text: "そよかぜ が ふいて きもちいい！🍃" },
-      { id: 29, rarity: "N", text: "おおきな きの したで ひとやすみ！🌳" },
-      { id: 30, rarity: "N", text: "にじ が かかっているのを みた！🌈 ラッキー！" },
-      { id: 31, rarity: "N", text: "ガラスの だま を みつけた！🔮 なにが みえるかな？" },
-      { id: 32, rarity: "N", text: "ふるい ほん を よんで おべんきょう！📚 かしこくなった！" },
-      { id: 33, rarity: "N", text: "ぼうけんの にっき を かいた！✏️ きょうも えらかった！" },
-      { id: 34, rarity: "N", text: "きれいな かいがら を ひろった！🐚 うみの おとが する！" },
-      { id: 35, rarity: "N", text: "テント を たてて キャンプだ！⛺" },
-      { id: 36, rarity: "N", text: "ホタル の ひかり が キレイ！✨ ぴかぴか！" },
-      { id: 37, rarity: "N", text: "やきたての クッキー を もらった！🍪 サクサク！" },
-      { id: 38, rarity: "N", text: "ちいさな ぼート で かわくだり！🛶 どんぶらこ！" },
-      { id: 39, rarity: "N", text: "きのこ を みつけた！🍄 ぽいーん！" },
-      { id: 40, rarity: "N", text: "ながれぼし に ねがいごと を した！🌠" },
-      { id: 41, rarity: "N", text: "まほうの みず たまり を ジャンプ！💦" },
-      { id: 42, rarity: "N", text: "ふくろう が ほうこく に きた！🦉 ホーホー！" },
-      { id: 43, rarity: "N", text: "のんびり おさんぽ！ はれぶたい！☀️" },
-      { id: 44, rarity: "N", text: "もりの 요정(ようせい) が あいさつ した！🧚‍♀️" },
-      { id: 45, rarity: "N", text: "げんきな カエル が ジャンプ！🐸 ぴょんっ！" },
-      { id: 46, rarity: "N", text: "おもたい いわ を どかした！ パワーアップ！💪" },
-      { id: 47, rarity: "N", text: "まほうの リンゴ！🍎 ひとくち かじって げんきいっぱい！" },
-      { id: 48, rarity: "N", text: "ポーション を のんだ！🧪 むてきの きぶん！" },
-      { id: 49, rarity: "N", text: "こびと の おうち を みつけた！🛖" },
-      { id: 50, rarity: "N", text: "どうくつ の いりぐち を はっけん！ ここからが ほんばん！🕳️" },
-      { id: 51, rarity: "N", text: "コウモリ が パタパタ とんでいった！🦇" },
-      { id: 52, rarity: "N", text: "あたらしく ぼうし を かった！🧢 ちょっぴり おしゃれ！" },
-      { id: 53, rarity: "N", text: "きんいろ の ハチ が はちみつ を くれた！🐝🍯" },
-      { id: 54, rarity: "N", text: "おとしもの を とどけて あげた！ やさしいね！💌" },
-      { id: 55, rarity: "N", text: "やま の ちょうじょう に ついた！🏔️ ヤッホー！" },
-      { id: 56, rarity: "N", text: "ちいさな オアシス で ひとやすみ！🏝️" },
-      { id: 57, rarity: "N", text: "ふしぎな タマゴ を みつけた！ アタタメよう！🥚" },
-      { id: 58, rarity: "N", text: "にじいろ の はね を ゲット！🪶" },
-      { id: 59, rarity: "N", text: "まほうの チョーク で えを かいた！🖍️" },
-      { id: 60, rarity: "N", text: "むらの おまつり で ダンス！💃 たのしいな！" },
+    // レアリティごとの経験値（EXP）設定
+    const rarityExp = { "N": 10, "R": 50, "SR": 200, "UR": 1000 };
+    const rpgConstant = 0.683; // 300種類コンプでLv100に達する係数
 
-      // --- R: 強力な武器・魔法・頼れる仲間（25種） ---
-      { id: 61, rarity: "R", text: "はがねの つるぎ を そうび！ カッコイイ！⚔️" },
-      { id: 62, rarity: "R", text: "まほうの たて が こうげきを はじく！🛡️✨" },
-      { id: 63, rarity: "R", text: "ほのおの まほう【ファイア】を おぼえた！🔥" },
-      { id: 64, rarity: "R", text: "かいふくまほう【ヒール】で げんき100ばい！💖" },
-      { id: 65, rarity: "R", text: "かぜの まほう【ウィンド】で そらをとぶ！🌪️" },
-      { id: 66, rarity: "R", text: "たのもしい けんし が なかまに なった！🤺" },
-      { id: 67, rarity: "R", text: "もりの おおくま が たすけに きた！🐻" },
-      { id: 68, rarity: "R", text: "そらとぶ じゅうたん を はっけん！🧞‍♂️" },
-      { id: 69, rarity: "R", text: "せいなる しずく で わるいゆめを ふきとばす！💧✨" },
-      { id: 70, rarity: "R", text: "かいぞくの たから を ゲット！🏴‍☠️💎" },
-      { id: 71, rarity: "R", text: "ニンジャ の しゅりけん を キャッチ！🥷" },
-      { id: 72, rarity: "R", text: "ぎんの よろい で むてき気分！🛡️" },
-      { id: 73, rarity: "R", text: "はねはえた くつ で ジャンプ力 UP！🦅" },
-      { id: 74, rarity: "R", text: "こおりの まほう【ブリザード】で ヒエヒエ！❄️" },
-      { id: 75, rarity: "R", text: "でんせつの コイン が ピカッと ひかった！🪙✨" },
-      { id: 76, rarity: "R", text: "するどい やり で つきすすむ！🔱" },
-      { id: 77, rarity: "R", text: "まほうの ホウキ で そらのおさんぽ！🧹" },
-      { id: 78, rarity: "R", text: "ロボット が チュートリアル を おしえてくれた！🤖" },
-      { id: 79, rarity: "R", text: "おうごん の カギ を みつけた！ どこが あくかな？🗝️" },
-      { id: 80, rarity: "R", text: "ユニコーン が あらわれた！ キラキラだ！🦄" },
-      { id: 81, rarity: "R", text: "かみなり の まほう【サンダー】！ ビリビリ！⚡" },
-      { id: 82, rarity: "R", text: "サムライ の かたな を ゆずりうけた！ かるい！🗡️" },
-      { id: 83, rarity: "R", text: "きょだいな わし に のって たびだつ！🦅💨" },
-      { id: 84, rarity: "R", text: "まほうつかい の ぼうし を かぶった！ まりょく UP！🧙‍♂️" },
-      { id: 85, rarity: "R", text: "エルフ の ゆみや で ねらいを さだめる！🏹" },
-
-      // --- SR: ボス級・伝説の装備や魔法（12種） ---
-      { id: 86, rarity: "SR", text: "【SR】ドラゴン が なかまに なった！ ほのおを ふくぞ！🐉🔥" },
-      { id: 87, rarity: "SR", text: "【SR】でんせつの つるぎ を ぬいた！ ゆうしゃの しょうめいだ！🗡️⚡" },
-      { id: 88, rarity: "SR", text: "【SR】だいマホウ【メテオ】！ いんせき が ふってくるぞ！☄️✨" },
-      { id: 89, rarity: "SR", text: "【SR】ペガサス に のって くもを つきぬけた！🦄☁️" },
-      { id: 90, rarity: "SR", text: "【SR】おうさま から ゆうしゃの かんむり を もらった！👑" },
-      { id: 91, rarity: "SR", text: "【SR】ひかりの たて が すべての こうげきを ガード！🛡️🌟" },
-      { id: 92, rarity: "SR", text: "【SR】きょだいな まじん を なかまに した！🧞‍♂️💪" },
-      { id: 93, rarity: "SR", text: "【SR】ふぇにっくす が まいおりて たいりょく ぜんかいふく！🦚🔥" },
-      { id: 94, rarity: "SR", text: "【SR】まおうの しろ の とびら を ひらいた！ カッコイイ！🏰✨" },
-      { id: 95, rarity: "SR", text: "【SR】きゅうきょくの よろい を そうび！ ダメージ ゼロ！🛡️✨" },
-      { id: 96, rarity: "SR", text: "【SR】じかん を とめる まほう【タイムストップ】！ むてき！⏳" },
-      { id: 97, rarity: "SR", text: "【SR】でんせつの けんおう が ししょう に なってくれた！⚔️🔥" },
-
-      // --- UR: 宇宙スケール・究極の称号（3種） ---
-      { id: 98, rarity: "UR", text: "🌈【UR】まぼろしの エクスカリバー！ せかいで 1ばん つよいぞ！ ⚔️✨" },
-      { id: 99, rarity: "UR", text: "🌈【UR】うちゅう を すくう ひかり！ きみは ぎんがの ヒーローだ！ 🌌💫" },
-      { id: 100, rarity: "UR", text: "🌈【UR】しんりゅう が あらわれた！ ねがいごと を かなえよう！ 🐉🐉" },
-
-      // ================= 101番〜200番 =================
-      
-      // --- N: まだまだ続く！日常の冒険（60種） ---
-      { id: 101, rarity: "N", text: "あかい きのみ を たべた！ すっぱーい！🍓" },
-      { id: 102, rarity: "N", text: "たからばこ は カラッポ だった… でも がっかりしない！📦" },
-      { id: 103, rarity: "N", text: "きの たて が こわれた！ でも ケガは ないぞ！🪵" },
-      { id: 104, rarity: "N", text: "ちいさな メダル 2まいめ！ チャリン！🪙" },
-      { id: 105, rarity: "N", text: "まよいの もり を ぬけた！ ほっと ひとあんしん！🌲" },
-      { id: 106, rarity: "N", text: "のらねこ が なかまに なりたそうに みている！🐈" },
-      { id: 107, rarity: "N", text: "おちていた りんご を ゲット！ まるかじり！🍎" },
-      { id: 108, rarity: "N", text: "きれいな いずみ で かお を あらった！ さっぱり！💧" },
-      { id: 109, rarity: "N", text: "むらの こどもたち と かくれんぼ！ みーっけ！🫣" },
-      { id: 110, rarity: "N", text: "はねかざり の ぼうし を そうび！ ちょっと かっこいい！🪶" },
-      { id: 111, rarity: "N", text: "スライム が プルプル している！ かわいい！💧" },
-      { id: 112, rarity: "N", text: "ふかい あな を ジャンプ で とびこえた！ ピョーン！🕳️" },
-      { id: 113, rarity: "N", text: "まちの けいじばん で クエスト を みつけた！📜" },
-      { id: 114, rarity: "N", text: "やどや で ぐっすり おやすみ！ ＨＰ ぜんかいふく！🛌" },
-      { id: 115, rarity: "N", text: "ちいさな クモ が いと を たれてきた！ こんにちは！🕷️" },
-      { id: 116, rarity: "N", text: "どうの たて を ゲット！ きのたて より つよいぞ！🛡️" },
-      { id: 117, rarity: "N", text: "おばあさん の おてつだい を した！ アメ を もらったよ！🍬" },
-      { id: 118, rarity: "N", text: "まほうの ランプ… ではない ただの ツボ だった！🏺" },
-      { id: 119, rarity: "N", text: "おおきな くしゃみ が 出た！ ハックション！💨" },
-      { id: 120, rarity: "N", text: "すなばく で サボテン を みつけた！ トゲトゲ！🌵" },
-      { id: 121, rarity: "N", text: "あやしい キノコ を スルーした！ えらい！🍄" },
-      { id: 122, rarity: "N", text: "うみべ で きれいな シーグラス を ひろった！💎" },
-      { id: 123, rarity: "N", text: "カニ が チョキチョキ あるいている！🦀" },
-      { id: 124, rarity: "N", text: "ゆきだるま を つくって あそんだ！ ⛄" },
-      { id: 125, rarity: "N", text: "あめ が ふってきたので アマガエル と あまやどり！🐸☔" },
-      { id: 126, rarity: "N", text: "おおきな クマの ぬいぐるみ を ゲット！ ギュッ！🧸" },
-      { id: 127, rarity: "N", text: "おひるね してたら ゆめ に ゆうしゃ が でてきた！💤" },
-      { id: 128, rarity: "N", text: "パンやさん から いいにおい！ ひとつ かった！🥖" },
-      { id: 129, rarity: "N", text: "みち を まちがえた けど、あたらしい はっけん が あった！🧭" },
-      { id: 130, rarity: "N", text: "たにぞこ に おとしもの を みつけた！ むらの ひとのだ！👀" },
-      { id: 131, rarity: "N", text: "むしの こえ が オーケストラ みたい！ ナイトコンサート！🦗🎵" },
-      { id: 132, rarity: "N", text: "どろだらけ に なったので おふろ で ピカピカに！🛁" },
-      { id: 133, rarity: "N", text: "あたらしい マント をはおった！ ヒーロー みたい！🦸" },
-      { id: 134, rarity: "N", text: "くさむら から モンスター？ いや、ただの ウサギ だ！🐇" },
-      { id: 135, rarity: "N", text: "ふしぎな タネ を うえた！ なにが さくかな？🌱" },
-      { id: 136, rarity: "N", text: "てづくりの ブーメラン が うまく とんだ！ シュバッ！🪃" },
-      { id: 137, rarity: "N", text: "こうえん で ぶらんこ に のった！ そら まで とどきそう！✨" },
-      { id: 138, rarity: "N", text: "おおきな コイ が スイミング している！ ぽちゃん！🐟" },
-      { id: 139, rarity: "N", text: "まちの ふんすい で コイン を なげた！ チャリン！⛲" },
-      { id: 140, rarity: "N", text: "おしろ の ほう を みあげた！ いつか いってみたい！🏰" },
-      { id: 141, rarity: "N", text: "みちばた の おじぞうさん に ごあいさつ！ いいことありそう！🙏" },
-      { id: 142, rarity: "N", text: "からす が カーカー ないている！ ゆうぐれだ！🐦‍⬛" },
-      { id: 143, rarity: "N", text: "まほうの じゅもん を ひとつ おぼえた… きがする！🪄" },
-      { id: 144, rarity: "N", text: "はぐるま が おちていた！ なんに つかうんだろう？⚙️" },
-      { id: 145, rarity: "N", text: "きりかぶ の うえ で ひとやすみ！ どっこいしょ！🪵" },
-      { id: 146, rarity: "N", text: "オレンジジュース で たいりょく かいふく！ 🍹" },
-      { id: 147, rarity: "N", text: "やまびこ に むかって さけんだ！ ヤッホー！🗣️" },
-      { id: 148, rarity: "N", text: "スライム が なかまに なった！ よろしくね！💧🤝" },
-      { id: 149, rarity: "N", text: "ちいさな ほし が ひとつ だけ ひかっている！⭐" },
-      { id: 150, rarity: "N", text: "おきにいり の くつ の ヒモ を むすび なおした！ ギュッ！👟" },
-      { id: 151, rarity: "N", text: "りんごの き から りんご が おちてきた！ ナイスキャッチ！🍎" },
-      { id: 152, rarity: "N", text: "ふるい どうぐや で ふしぎな ボール を かった！🔮" },
-      { id: 153, rarity: "N", text: "カメ と かけっこ した！ もちろん かったぞ！🐢💨" },
-      { id: 154, rarity: "N", text: "みずたまり に うつる じぶん と にらめっこ！ 😝" },
-      { id: 155, rarity: "N", text: "きの ボウガン の れんしゅう を した！ マトに メイチュウ！🎯" },
-      { id: 156, rarity: "N", text: "まよいねこ を かいぬし に とどけた！ ありがとう！🐈" },
-      { id: 157, rarity: "N", text: "ちいさな たき で マイナスイオン を あびた！🌊" },
-      { id: 158, rarity: "N", text: "どんぐり を 3つ ひろった！ コロコロ！🌰" },
-      { id: 159, rarity: "N", text: "てがみ が とどいた！ ぼうけん の さそい だ！✉️" },
-      { id: 160, rarity: "N", text: "きょう の ぼうけん は これで おしまい！ よく がんばったね！🏕️" },
-
-      // --- R: 魔法と頼もしい仲間たち（25種） ---
-      { id: 161, rarity: "R", text: "みずの まほう【ウォータ】！ あつい ひ も すずしい！💧✨" },
-      { id: 162, rarity: "R", text: "おおきな オオカミ が なかま に なった！ ギュオーン！🐺" },
-      { id: 163, rarity: "R", text: "ぎんの つるぎ を そうび！ モンスター も びっくり！🗡️" },
-      { id: 164, rarity: "R", text: "かいふく の くすり【ハイポーション】！ キズ が すぐなおる！🧪" },
-      { id: 165, rarity: "R", text: "てつの たて で がっちり ガード！ カチン！🛡️" },
-      { id: 166, rarity: "R", text: "だいちの まほう【クエイク】！ じめん が ゆれるぞ！🌍" },
-      { id: 167, rarity: "R", text: "しゃべる オウム が ヒントを くれた！ アッチ！ アッチ！🦜" },
-      { id: 168, rarity: "R", text: "そらをとぶ マント！ スーパーマン みたい！🦸‍♂️💨" },
-      { id: 169, rarity: "R", text: "どくけしそう で ピンチ を ぬけた！ ふう、あぶなかった！🌿" },
-      { id: 170, rarity: "R", text: "ほうせき の かけら を はっけん！ ピカピカ だ！💎" },
-      { id: 171, rarity: "R", text: "エルフ の くすり で まりょく が あふれてくる！🧪✨" },
-      { id: 172, rarity: "R", text: "かたい こうら の カメ が なかまに なった！ かたいぞ！🐢" },
-      { id: 173, rarity: "R", text: "ひかりの まほう【ホーリー】！ まわり が パッと あかるい！🌟" },
-      { id: 174, rarity: "R", text: "どろぼう を つかまえた！ むらの ひーろー だ！👮" },
-      { id: 175, rarity: "R", text: "おもたい ハンマー を もちあげた！ ちからもち！🔨" },
-      { id: 176, rarity: "R", text: "けんじゃ の ぼうし を かぶった！ あたま が よく なった！🎓" },
-      { id: 177, rarity: "R", text: "まほうの レンズ で みえない モノ が みえた！🔍" },
-      { id: 178, rarity: "R", text: "にんじゃ の けむりだま！ ポンッ と きえるぞ！💨" },
-      { id: 179, rarity: "R", text: "ほしくず の ゆみや で かぜ を キル！ びゅん！🏹" },
-      { id: 180, rarity: "R", text: "まほうの コンパス が ぼうけん の さき を さししめす！🧭✨" },
-      { id: 181, rarity: "R", text: "ゴーレム が なかまに なった！ ドッスン ドッスン！🪨" },
-      { id: 182, rarity: "R", text: "ブレイブ・バッジ を むね に つけた！ ゆうき が わいてくる！🎖️" },
-      { id: 183, rarity: "R", text: "ねむりの まほう【スリープ】！ てき は ぐっすり むにゃむにゃ…💤" },
-      { id: 184, rarity: "R", text: "はがね の よろい を そうび！ ちょっと おもい！🛡️" },
-      { id: 185, rarity: "R", text: "でんせつ の さかな を つりあげた！ おおきいぞ！🎣🐟" },
-
-      // --- SR: ボス級・伝説の装備（12種） ---
-      { id: 186, rarity: "SR", text: "【SR】せいなる つるぎ が やみを きりさく！✨⚔️" },
-      { id: 187, rarity: "SR", text: "【SR】だいてんし の はね！ そらたかく まいあがる！👼☁️" },
-      { id: 188, rarity: "SR", text: "【SR】ひみつの まほう【アルテマ・ミニ】！ チョット だけ すごい ばくはつ！💥" },
-      { id: 189, rarity: "SR", text: "【SR】おうごん の ドラゴン が あらわれた！ なかま に なる！？🐲✨" },
-      { id: 190, rarity: "SR", text: "【SR】えいゆう の たて！ どんな ドラゴン の ほのお も ふせぐ！🛡️🔥" },
-      { id: 191, rarity: "SR", text: "【SR】まほう の ミラー！ てき の こうげき を はねかえすぞ！🪞✨" },
-      { id: 192, rarity: "SR", text: "【SR】せいれい の おまもり！ すべて の いのち を まもる パワー！💎💖" },
-      { id: 193, rarity: "SR", text: "【SR】まおう の みぎうで を なかま に した！ つよすぎる！💪👿" },
-      { id: 194, rarity: "SR", text: "【SR】ひみつの いせき を ぜんぶ クリア した！ だいぼうけん！🏛️✨" },
-      { id: 195, rarity: "SR", text: "【SR】けんおう の よろい！ だれにも まけない オーラ が でる！👑🛡️" },
-      { id: 196, rarity: "SR", text: "【SR】しんじる ココロ が きせき を おこした！ ふっかつ の ジュモン！🌟" },
-      { id: 197, rarity: "SR", text: "【SR】ペガサスナイト が そら から きみを まもる！🦄⚔️" },
-
-      // --- UR: 奇跡の展開・究極の称号（3種） ---
-      { id: 198, rarity: "UR", text: "🌈【UR】ほしの かけら が あつまり、きせき が おきた！ 🌟" },
-      { id: 199, rarity: "UR", text: "🌈【UR】ときを かける まほう！ かこ と みらい を だいぼうけん！ ⏳✨" },
-      { id: 200, rarity: "UR", text: "🌈【UR】すべての まもの と ともだち に なった！ せかい に ヘイワ が おとずれた！ 🕊️🌍" },
-
-        // ================= 201番〜300番 =================
-      
-      // --- N: 冒険の道のりと小さな幸せ（60種） ---
-      { id: 201, rarity: "N", text: "あさつゆ が キラキラ ひかっている！💧✨" },
-      { id: 202, rarity: "N", text: "まちの パンやさん で おまけ してもらった！🥖" },
-      { id: 203, rarity: "N", text: "ふるい どうか を ひろった！ ピカピカに みがこう！🪙" },
-      { id: 204, rarity: "N", text: "いぬ と かけっこ して 引き分け！🐶💦" },
-      { id: 205, rarity: "N", text: "おおきな あくび が でた！ ふぁ〜あ！🥱" },
-      { id: 206, rarity: "N", text: "ちいさな ほらあな で あまやどり！☔" },
-      { id: 207, rarity: "N", text: "めだまやき を きれいに つくれた！ じょうず！🍳" },
-      { id: 208, rarity: "N", text: "みちばた の ざっそう を ぬいて あげた！🌱" },
-      { id: 209, rarity: "N", text: "おもたい にもつ を はこぶ おてつだい！ むきっ！💪" },
-      { id: 210, rarity: "N", text: "かわいい どんぐり の ぼうし を みつけた！🌰" },
-      { id: 211, rarity: "N", text: "むらびと に ぼうけん の おはなし を してあげた！🗣️" },
-      { id: 212, rarity: "N", text: "よつば の クローバー を はっけん！ 🍀" },
-      { id: 213, rarity: "N", text: "おしろ の けいびへい に あいさつ！ ピシッ！🫡" },
-      { id: 214, rarity: "N", text: "かわ で メダカ を みつけた！ すいすい！🐟" },
-      { id: 215, rarity: "N", text: "ふしぎな いろ の イシ を ポッケ に いれた！🪨" },
-      { id: 216, rarity: "N", text: "カラス が ピカピカ するものを おとしていった！🐦‍⬛✨" },
-      { id: 217, rarity: "N", text: "はらっぱ で だいのじ に なって ねころんだ！🌿" },
-      { id: 218, rarity: "N", text: "おべんとう の おにぎり が さいこう に おいしい！🍙" },
-      { id: 219, rarity: "N", text: "ぼうけん の ちず に あたらしい しるし を かいた！🗺️" },
-      { id: 220, rarity: "N", text: "クシャミ を したら スライム が びっくりして にげた！💧💨" },
-      { id: 221, rarity: "N", text: "きの ボウシ を あたらしく つくった！ カンカン！🔨" },
-      { id: 222, rarity: "N", text: "もりの おく で あまい におい が する！ 🍯" },
-      { id: 223, rarity: "N", text: "おじいさん の にもつ を はこんで あげた！ ありがとう！👴" },
-      { id: 224, rarity: "N", text: "たきび で マシュマロ を やいて たべた！ ふわふわ！🔥" },
-      { id: 225, rarity: "N", text: "ちいさな チョウチョ が はな に とまった！🦋" },
-      { id: 226, rarity: "N", text: "くさむら から バッタ が とびだしてきた！ ピョーン！🦗" },
-      { id: 227, rarity: "N", text: "きれいな くも を みあげて のんびり！☁️" },
-      { id: 228, rarity: "N", text: "あたらしい ブーツ を はいで ステップ！👢♪" },
-      { id: 229, rarity: "N", text: "やま の むこう に おしろ が みえた！🏰👀" },
-      { id: 230, rarity: "N", text: "みずうみ で どろあそび！ せんたく が たいへん！💦" },
-      { id: 231, rarity: "N", text: "こわれた はし を なお店 あげた！ えらい！ 🌉" },
-      { id: 232, rarity: "N", text: "まほうの つえ… の ような きのえだ を ゲット！🪄" },
-      { id: 233, rarity: "N", text: "ふくろう が ウインク してくれた！🦉😉" },
-      { id: 234, rarity: "N", text: "みちばた の たてふだ を よんだ！ 「このさき きけん！」⚠️" },
-      { id: 235, rarity: "N", text: "おおきな ハッパ を カサ がわり に した！🍃☔" },
-      { id: 236, rarity: "N", text: "まち の とけいとう の ガンガン なる おと を きいた！ 🔔" },
-      { id: 237, rarity: "N", text: "ミルク を のんで ホッと ひとやすみ！ 🥛" },
-      { id: 238, rarity: "N", text: "トカゲ が すばやく はしって いった！ 🦎💨" },
-      { id: 239, rarity: "N", text: "あたたかい スープ で おなかが ぽかぽか！ 🥣" },
-      { id: 240, rarity: "N", text: "おとしあな に おちそうに なったけど セーフ！ 🕳️💦" },
-      { id: 241, rarity: "N", text: "ふるい カギ を ひろった！ どこか あくかな？ 🗝️" },
-      { id: 242, rarity: "N", text: "すなはま で おおきな おしろ を つくった！ 🏖️🏰" },
-      { id: 243, rarity: "N", text: "おまつり の たいこ の おと が きこえる！ 🥁" },
-      { id: 244, rarity: "N", text: "ふしぎな きのこ が ひかっている！ 🍄✨" },
-      { id: 245, rarity: "N", text: "テントウムシ が うで を ちょこちょこ あるく！ 🐞" },
-      { id: 246, rarity: "N", text: "みずうみ に いし を なげて 水切り！ 3かい はねた！ 🌊" },
-      { id: 247, rarity: "N", text: "あきいろ の もみじ を しおり に した！ 🍁" },
-      { id: 248, rarity: "N", text: "ちいさな オバケ が いたずら して にげていった！ 👻" },
-      { id: 249, rarity: "N", text: "むらの こども と ジャンケン ポン！ ✌️ かち！" },
-      { id: 250, rarity: "N", text: "おおきな あくび を したら むし が むせてた！ 😲" },
-      { id: 251, rarity: "N", text: "たび の おもいで を えっき に かいた！ 📖" },
-      { id: 252, rarity: "N", text: "ながい かいだん を いっき に のぼった！ ハァハァ！ 🪜" },
-      { id: 253, rarity: "N", text: "すずしい かぜ が ぼうし を ぬけさった！ 🌬️👒" },
-      { id: 254, rarity: "N", text: "きれいな とり の はね を ぼうし に さした！ 🪶" },
-      { id: 255, rarity: "N", text: "あまい ケーキ を ひとくち もらった！ 🍰" },
-      { id: 256, rarity: "N", text: "こぐま が コロコロ ころがって あそんでいる！ 🐻" },
-      { id: 257, rarity: "N", text: "ちず が かぜ で とばされそうに なった！ キャッチ！ 🗺️💨" },
-      { id: 258, rarity: "N", text: "はちみつ を ペロリ！ パワー が でてきた！ 🍯😋" },
-      { id: 259, rarity: "N", text: "きょう の おてんき は さいこう の ぼうけん びより！ ☀️" },
-      { id: 260, rarity: "N", text: "ベッド に はいる と すぐに ぐっすり… 💤" },
-
-      // --- R: 成長と強力な装備・仲間（25種） ---
-      { id: 261, rarity: "R", text: "みずの まほう【アクア】！ あつい ひ も すずしい！💧✨" },
-      { id: 262, rarity: "R", text: "おおきな オオカミ が なかま に なった！ ギュオーン！🐺" },
-      { id: 263, rarity: "R", text: "ぎんの つるぎ を そうび！ モンスター も びっくり！🗡️" },
-      { id: 264, rarity: "R", text: "かいふく の くすり【ハイポーション】！ キズ が すぐなおる！🧪" },
-      { id: 265, rarity: "R", text: "てつの たて で がっちり ガード！ カチン！🛡️" },
-      { id: 266, rarity: "R", text: "だいちの まほう【クエイク】！ じめん が ゆれるぞ！🌍" },
-      { id: 267, rarity: "R", text: "しゃべる オウム が ヒントを くれた！ アッチ！ アッチ！🦜" },
-      { id: 268, rarity: "R", text: "そらをとぶ マント！ スーパーマン みたい！🦸‍♂️💨" },
-      { id: 269, rarity: "R", text: "どくけしそう で ピンチ を ぬけた！ ふう、あぶなかった！🌿" },
-      { id: 270, rarity: "R", text: "ほうせき の かけら を はっけん！ ピカピカ だ！💎" },
-      { id: 271, rarity: "R", text: "エルフ の くすり で まりょく が あふれてくる！🧪✨" },
-      { id: 272, rarity: "R", text: "かたい こうら の カメ が なかまに なった！ かたいぞ！🐢" },
-      { id: 273, rarity: "R", text: "ひかりの まほう【ホーリー】！ まわり が パッと あかるい！🌟" },
-      { id: 274, rarity: "R", text: "どろぼう を つかまえた！ むらの ひーろー だ！👮" },
-      { id: 275, rarity: "R", text: "おもたい ハンマー を もちあげた！ ちからもち！🔨" },
-      { id: 276, rarity: "R", text: "けんじゃ の ぼうし を かぶった！ あたま が よく なった！🎓" },
-      { id: 277, rarity: "R", text: "まほうの レンズ で みえない モノ が みえた！🔍" },
-      { id: 278, rarity: "R", text: "にんじゃ の けむりだま！ ポンッ と きえるぞ！💨" },
-      { id: 279, rarity: "R", text: "ほしくず の ゆみや で かぜ を キル！ びゅん！🏹" },
-      { id: 280, rarity: "R", text: "まほうの コンパス が ぼうけん の さき を さししめす！🧭✨" },
-      { id: 281, rarity: "R", text: "ゴーレム が なかまに なった！ ドッスン ドッスン！🪨" },
-      { id: 282, rarity: "R", text: "ブレイブ・バッジ を むね に つけた！ ゆうき が わいてくる！🎖️" },
-      { id: 283, rarity: "R", text: "ねむりの まほう【スリープ】！ てき は ぐっすり むにゃむにゃ…💤" },
-      { id: 284, rarity: "R", text: "はがね の よろい を そうび！ ちょっと おもい！🛡️" },
-      { id: 285, rarity: "R", text: "でんせつ の さかな を つりあげた！ おおきいぞ！🎣🐟" },
-
-      // --- SR: 終盤のボス・伝説級の装備や魔法（12種） ---
-      { id: 286, rarity: "SR", text: "【SR】せいなる つるぎ が やみを きりさく！✨⚔️" },
-      { id: 287, rarity: "SR", text: "【SR】だいてんし の はね！ そらたかく まいあがる！👼☁️" },
-      { id: 288, rarity: "SR", text: "【SR】ひみつの まほう【アルテマ・ミニ】！ チョット だけ すごい ばくはつ！💥" },
-      { id: 289, rarity: "SR", text: "【SR】おうごん の ドラゴン が あらわれた！ なかま に なる！？🐲✨" },
-      { id: 290, rarity: "SR", text: "【SR】えいゆう の たて！ どんな ドラゴン の ほのお も ふせぐ！🛡️🔥" },
-      { id: 291, rarity: "SR", text: "【SR】まほう の ミラー！ てき の こうげき を はねかえすぞ！🪞✨" },
-      { id: 292, rarity: "SR", text: "【SR】せいれい の おまもり！ すべて の いのち を まもる パワー！💎💖" },
-      { id: 293, rarity: "SR", text: "【SR】まおう の みぎうで を なかま に した！ つよすぎる！💪👿" },
-      { id: 294, rarity: "SR", text: "【SR】ひみつの いせき を ぜんぶ クリア した！ だいぼうけん！🏛️✨" },
-      { id: 295, rarity: "SR", text: "【SR】けんおう の よろい！ だれにも まけない オーラ が でる！👑🛡️" },
-      { id: 296, rarity: "SR", text: "【SR】しんじる ココロ が きせき を おこした！ ふっかつ の ジュモン！🌟" },
-      { id: 297, rarity: "SR", text: "【SR】ペガサスナイト が そら から きみを まもる！🦄⚔️" },
-
-      // --- UR: コンプリートを彩る究極の言葉（3種） ---
-      { id: 298, rarity: "UR", text: "🌈【UR】すべての まもの と ともだち に なった！ せかい に ヘイワ が おとずれた！ 🕊️🌍" },
-      { id: 299, rarity: "UR", text: "🌈【UR】ときを かける まほう！ かこ と みらい を だいぼうけん！ ⏳✨" },
-      { id: 300, rarity: "UR", text: "🌈【UR】ぼうけん は これからも つづく！ きみ は えいえん の ゆうしゃ だ！ 👑🎉" }
-    ]; // ★ここで配列をしっかりと閉じます。
-
-  // ================= ここから下のプログラムをすべて上書き =================
-
-    // 【安全装置】もし12秒以上ぐるぐるが続いたら、強制的にエラー画面を出して原因を表示する
+    // 12秒のタイムアウト安全診断装置
     setTimeout(() => {
       const loadingView = document.getElementById('loading-view');
       if (loadingView && loadingView.classList.contains('active-view')) {
-        showError("通信がタイムアウトしました。電波が悪いか、GASのURLが間違っている可能性があります。");
+        showError("通信タイムアウト。GASのURLかデプロイ設定を今一度ご確認ください。");
       }
     }, 12000);
 
     function showError(message) {
-      document.getElementById('error-view').innerHTML = `
-        <h2>うーん、つながらなかったよ 😢</h2>
-        <p>電波のよいところで、もういちど試してみてね。</p>
-        <p style="color:#c0392b; font-size:0.9rem; margin-top:20px; font-weight:bold; background:#fadbd8; padding:10px; border-radius:10px;">
-          【親御さん向け・エラー原因】<br>${message}
-        </p>
-        <button class="btn" style="background-color: #e74c3c; box-shadow:0 6px 0 #c0392b;" onclick="location.reload()">やりなおす</button>
-      `;
+      const details = document.getElementById('error-details');
+      if (details) { details.innerText = "【親御さん向けエラー】: " + message; details.style.display = "block"; }
       switchView('error-view');
     }
 
@@ -526,29 +195,18 @@
       else targetRarity = "N";
       
       const pool = gachaMessages.filter(m => m.rarity === targetRarity);
+      if (pool.length === 0) return {id:0, rarity:"N", text:"ずかんデータ（list.js）を読み込み中！"};
       return pool[Math.floor(Math.random() * pool.length)];
     }
 
     function switchView(viewId) {
-      try {
-        const views = document.querySelectorAll('.view');
-        for (let i = 0; i < views.length; i++) {
-          views[i].classList.remove('active-view');
-        }
-        const target = document.getElementById(viewId);
-        if (target) target.classList.add('active-view');
-      } catch(e) {
-        console.error("画面切り替えエラー:", e);
-      }
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+      const target = document.getElementById(viewId);
+      if(target) target.classList.add('active-view');
     }
 
-    // ================= RPGレベル＆コレクション処理 =================
-    function getCollectedIds() {
-      try {
-        return JSON.parse(localStorage.getItem('gacha_collection') || '[]');
-      } catch(e) {
-        return []; // データが壊れていた場合は空に戻す
-      }
+    function getCollectedIds() { 
+      try { return JSON.parse(localStorage.getItem('gacha_collection') || '[]'); } catch(e) { return []; }
     }
 
     function saveToCollection(id) {
@@ -561,30 +219,61 @@
       return false; 
     }
 
+    function calculateTotalExp(collectedIds) {
+      let totalExp = 0;
+      collectedIds.forEach(id => {
+        const card = gachaMessages.find(m => m.id === id);
+        if (card) totalExp += rarityExp[card.rarity];
+      });
+      return totalExp;
+    }
+
+    function calculateExpFromLevel(level) {
+      if (level <= 1) return 0;
+      return Math.pow((level - 1) / rpgConstant, 2);
+    }
+
     function getRpgStatus() {
-      const level = getCollectedIds().length + 1;
-      let title = "むらびと";
-      if (level >= 100) title = "🌈 うちゅうの きゅうせいしゅ";
-      else if (level >= 80) title = "👑 でんせつの ゆうしゃ";
-      else if (level >= 50) title = "⚔️ えいゆう";
-      else if (level >= 30) title = "🛡️ たつじん ぼうけんしゃ";
-      else if (level >= 15) title = "🎒 いっぱしの ぼうけんしゃ";
-      else if (level >= 5) title = "🗡️ かけだしの ゆうしゃ";
-      else title = "🌱 みならい ゆうしゃ";
+      const collectedIds = getCollectedIds();
+      const totalExp = calculateTotalExp(collectedIds);
       
-      return { level, title };
+      let level = Math.floor(1 + rpgConstant * Math.sqrt(totalExp));
+      if (level < 1) level = 1;
+      
+      const titles = [
+        { minLevel: 100, title: "🌈 うちゅうの きゅうせいしゅ" },
+        { minLevel: 80, title: "👑 でんせつの ゆうしゃ" },
+        { minLevel: 50, title: "⚔️ えいゆう" },
+        { minLevel: 30, title: "🛡️ たつじん ぼうけんしゃ" },
+        { minLevel: 15, title: "🎒 いっぱしの ぼうけんしゃ" },
+        { minLevel: 5,  title: "🗡️ かけだしの ゆうしゃ" },
+        { minLevel: 1,  title: "🌱 みならい ゆうしゃ" }
+      ];
+      const statusTitle = titles.find(t => level >= t.minLevel).title;
+      
+      const currentLevelExpMinTotal = calculateExpFromLevel(level);
+      const nextLevelExpTotal = calculateExpFromLevel(level + 1);
+      const expInLevel = totalExp - currentLevelExpMinTotal;
+      const expToNextLevel = nextLevelExpTotal - currentLevelExpMinTotal;
+      
+      return { level, title: statusTitle, totalExp, cardCount: collectedIds.length, expInLevel, expToNextLevel };
     }
 
     function updateRpgDisplay() {
       const status = getRpgStatus();
-      const topLevel = document.getElementById('top-level');
-      if(topLevel) topLevel.innerText = status.level;
-      const topTitle = document.getElementById('top-title');
-      if(topTitle) topTitle.innerText = status.title;
-      const dictLevel = document.getElementById('dict-level');
-      if(dictLevel) dictLevel.innerText = status.level;
-      const dictTitle = document.getElementById('dict-title');
-      if(dictTitle) dictTitle.innerText = status.title;
+      ['top-level', 'dict-level'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = status.level; });
+      ['top-title', 'dict-title'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = status.title; });
+      
+      const dictExp = document.getElementById('dict-exp');
+      if(dictExp) dictExp.innerHTML = `<strong>EXP: ${Math.floor(status.totalExp)}</strong>`;
+      
+      const dictExpBar = document.getElementById('dict-exp-bar-fill');
+      if(dictExpBar) {
+        const percentage = status.expToNextLevel > 0 ? (status.expInLevel / status.expToNextLevel) * 100 : 100;
+        dictExpBar.style.width = `${Math.min(percentage, 100)}%`;
+      }
+      const dictExpToNext = document.getElementById('dict-exp-tonext');
+      if(dictExpToNext) dictExpToNext.innerHTML = `つぎの レベルまで： あと ${Math.floor(status.expToNextLevel - status.expInLevel)} EXP`;
     }
 
     function openDictionary() {
@@ -603,7 +292,6 @@
       sortedMessages.forEach(med => {
         const isUnlocked = collected.includes(med.id);
         const itemDiv = document.createElement('div');
-        
         if (isUnlocked) {
           itemDiv.className = `dict-item dict-unlocked-${med.rarity}`;
           itemDiv.innerHTML = `<span class="rarity-tag tag-${med.rarity}">${med.rarity}</span> ${med.text}`;
@@ -617,38 +305,25 @@
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('reset')) {
-          localStorage.clear(); 
-          alert("✅ アプリの履歴（飲んだ回数・図鑑レベル）をすべてリセットしました！");
-          window.location.href = window.location.origin + window.location.pathname;
-          return;
-        }
-        
-        updateRpgDisplay();
-        
-        if (urlParams.has('id')) {
-          state.currentSelectedMedId = urlParams.get('id');
-        }
-        await loadMedicationList();
-      } catch (e) {
-        showError("起動中にエラーが発生しました: " + e.message);
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('reset')) {
+        localStorage.clear(); 
+        alert("✅ アプリの履歴（飲んだ回数・図鑑・経験値）をすべてリセットしました！");
+        window.location.href = window.location.origin + window.location.pathname;
+        return;
       }
+      updateRpgDisplay();
+      if (urlParams.has('id')) state.currentSelectedMedId = urlParams.get('id');
+      await loadMedicationList();
     });
 
     async function loadMedicationList() {
       try {
         const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('タイムアウト（通信が遅すぎます）')), 8000));
-        
-        const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => {
-          if (!res.ok) throw new Error(`サーバーエラー (ステータス: ${res.status})`);
-          return res.json();
-        });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('通信タイムアウト')), 8000));
+        const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => res.json());
 
         const response = await Promise.race([fetchPromise, timeoutPromise]);
-        
         if (response && response.status === 'success') {
           state.medList = response.data;
           renderList();
@@ -670,10 +345,10 @@
           }
           switchView('task-view');
         } else {
-          throw new Error(response ? response.message : "データが取得できませんでした");
+          showError("データ構造エラー");
         }
       } catch (error) {
-        showError("通信エラー: " + error.message);
+        showError(error.message);
       }
     }
 
@@ -688,17 +363,13 @@
         const card = document.createElement('div');
         card.className = 'med-card';
         if (limitCount > 0 && currentCount >= limitCount) {
-          card.innerHTML = `
-            <h3>✅ ${med.title}</h3>
-            <p style="color: #2ecc71; font-weight: bold;">きょうは もう おわったよ！🌟</p>
-          `;
+          card.innerHTML = `<h3>✅ ${med.title}</h3><p style="color: #2ecc71; font-weight: bold;">きょうは もう おわったよ！🌟</p>`;
         } else {
           let countBadge = limitCount > 0 ? `<span style="font-size:0.8rem; background:#3498db; color:white; padding:2px 6px; border-radius:5px;">あと ${limitCount - currentCount}回</span>` : '';
           card.innerHTML = `
             <h3>💊 ${med.title} ${countBadge}</h3>
             <p style="font-size: 0.9rem; color: #7f8c8d;">(${med.time} の おくすり)</p>
-            <button class="btn btn-camera" style="padding:10px 20px; font-size:1.1rem; width:auto;" 
-              onclick="openCameraView('${med.id}', '${med.title}')">のんだよ！📸</button>
+            <button class="btn btn-camera" style="padding:10px 20px; font-size:1.1rem; width:auto;" onclick="openCameraView('${med.id}', '${med.title}')">のんだよ！📸</button>
           `;
         }
         container.appendChild(card);
@@ -726,7 +397,7 @@
       const copyText = document.getElementById(`nfc-url-${medId}`);
       copyText.select();
       copyText.setSelectionRange(0, 99999);
-      navigator.clipboard.writeText(copyText.value).then(() => alert("コピーしました！")).catch(() => alert("手動でコピーしてください"));
+      navigator.clipboard.writeText(copyText.value).then(() => alert("コピーしました！"));
     }
 
     function openCameraView(medId, medTitle) {
@@ -736,44 +407,38 @@
     }
 
     function resizeAndConvertGachaImage(file) {
-      return new Promise((resolve, reject) => {
-        try {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-              const canvas = document.createElement('canvas');
-              let width = img.width; let height = img.height;
-              const max = 800; 
-              if (width > height) { if (width > max) { height *= max / width; width = max; } } 
-              else { if (height > max) { width *= max / height; height = max; } }
-              canvas.width = width; canvas.height = height;
-              canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-              resolve(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]); 
-            };
-            img.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
-            img.src = e.target.result;
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width; let height = img.height;
+            const max = 800; 
+            if (width > height) { if (width > max) { height *= max / width; width = max; } } 
+            else { if (height > max) { width *= max / height; height = max; } }
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]); 
           };
-          reader.onerror = () => reject(new Error("ファイルの読み込みに失敗しました"));
-          reader.readAsDataURL(file);
-        } catch(e) {
-          reject(e);
-        }
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
       });
     }
 
     document.getElementById('camera-input').addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      switchView('sending-view');
+      const base64Image = await resizeAndConvertGachaImage(file);
+      const payload = { action: 'log', id: state.currentSelectedMedId, name: 'ユーザー', image: base64Image };
+
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
+      const fetchPromise = fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+
       try {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        switchView('sending-view');
-        const base64Image = await resizeAndConvertGachaImage(file);
-        const payload = { action: 'log', id: state.currentSelectedMedId, name: 'ユーザー', image: base64Image };
-
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('送信タイムアウト（通信が遅すぎます）')), 10000));
-        const fetchPromise = fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-
         await Promise.race([fetchPromise, timeoutPromise]);
 
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -782,13 +447,14 @@
 
         const gachaResult = drawGacha();
         const isNew = saveToCollection(gachaResult.id);
-        
+        const earnedExp = rarityExp[gachaResult.rarity]; 
+
         const rarityBox = document.getElementById('gacha-rarity');
         const messageBox = document.getElementById('child-message-box');
         const badgeContainer = document.getElementById('new-badge-container');
         
         if (isNew) {
-          badgeContainer.innerHTML = `<div class="new-badge">✨ NEW! レベルがあがった！ ✨</div>`;
+          badgeContainer.innerHTML = `<div class="new-badge">✨ NEW! ${earnedExp} EXP ゲット！ ✨</div>`;
         } else {
           badgeContainer.innerHTML = '';
         }
@@ -807,15 +473,18 @@
           messageBox.style.backgroundColor = '#fff3e0'; messageBox.style.color = '#d35400'; messageBox.style.border = '2px solid #e67e22';
         }
         
-        messageBox.innerHTML = `<strong>${gachaResult.text}</strong>`;
+        messageBox.innerHTML = `
+          <strong>${gachaResult.text}</strong>
+          <p style="margin:10px 0 0 0; font-size:1.1rem; color:#2c3e50;">＋ ${earnedExp} EXP ゲット！</p>
+        `;
 
         switchView('complete-view');
-        
         if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+        updateRpgDisplay();
 
       } catch (error) {
-        showError("送信エラー: " + error.message);
+        showError("送信失敗: " + error.message);
       } finally {
         e.target.value = '';
       }
