@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#29434b">
+<title>神経衰弱 アーケード v0.1.1</title>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');</script>
+<style>
+:root{
+  --gold:#d6a744;--gold2:#f0d17b;--red:#c9544b;--green:#4c8c70;--blue:#528da3;--ink:#26353a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:#102b33;font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif}
+body{display:flex;justify-content:center;min-height:100dvh;overflow-x:hidden}
+button{font:inherit}
+#app{
+  width:min(100vw,480px);min-height:100dvh;position:relative;overflow:hidden;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% -5%,rgba(255,244,190,.12),transparent 34%),linear-gradient(180deg,#315660,#23434c 45%,#17323a);
+  color:#f7efdd
+}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.title{font-size:13px;font-weight:1000;letter-spacing:.08em}.subtitle{display:block;font-size:10px;opacity:.62;margin-top:2px}
+.wallet{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 7px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(0,0,0,.16)}
+.coinMini{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff0b6 0 10%,var(--gold2) 11% 44%,var(--gold) 45% 73%,#9d6b20 74% 100%);border:2px solid #f6dc8b;color:#855b1b;font-size:11px;font-weight:1000}
+.wallet b{font-size:18px;min-width:22px;text-align:center}.wallet span{font-size:11px;opacity:.7}
+.weekCard{margin-bottom:12px;padding:11px 12px;border:1px solid rgba(255,255,255,.13);border-radius:22px;background:rgba(4,20,28,.26)}
+.weekHead{display:flex;justify-content:space-between;gap:10px}.weekHead strong{font-size:13px}.weekHead small{display:block;font-size:9px;opacity:.58;margin-top:2px}
+.badge{align-self:flex-start;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.2);font-size:9px;font-weight:900}.badge.open{background:rgba(79,145,116,.34);color:#ddf6e6}
+.weekDays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:9px}.dayCell{text-align:center;font-size:9px;font-weight:900;opacity:.67}
+.dayDot{width:28px;height:28px;margin:4px auto 0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3)}
+.dayCell.done{opacity:1}.dayCell.done .dayDot{background:radial-gradient(circle at 35% 30%,#ffeaa2 0 9%,#ddb04f 10% 52%,#a47023 53% 100%);color:#745018;border-color:#ecd07c}
+.weekStatus{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;font-weight:800;line-height:1.5}
+.machine{position:relative;background:linear-gradient(155deg,#fbf0dc,#e6d0aa);border-radius:31px;padding:16px 14px 17px;box-shadow:0 24px 58px rgba(0,0,0,.29),inset 0 2px rgba(255,255,255,.85),inset 0 -4px rgba(117,78,34,.08);color:var(--ink);overflow:hidden}
+.machine:before{content:"";position:absolute;left:14px;right:14px;top:11px;height:8px;border-radius:99px;background:linear-gradient(90deg,#c9544b 0 26%,#d8aa49 26% 50%,#4f8e72 50% 76%,#548ba0 76%);opacity:.84}
+.marquee{text-align:center;margin:8px 0 7px}.marquee strong{display:block;font-size:20px;letter-spacing:.08em}.marquee small{font-size:10px;color:#6e797b;font-weight:800}
+.slotArea{display:flex;justify-content:center;align-items:center;gap:9px;margin:3px auto 10px;font-size:10px;font-weight:900;color:#6b6963}
+.medalSlot{position:relative;width:78px;height:28px;border-radius:10px;background:linear-gradient(#9d8a70,#5b4c3a);box-shadow:inset 0 4px 8px rgba(0,0,0,.38),0 2px rgba(255,255,255,.55)}
+.medalSlot:before{content:"";position:absolute;left:13px;right:13px;top:10px;height:5px;border-radius:99px;background:#181512}
+.medalSlot.flash{animation:slotFlash .62s ease}@keyframes slotFlash{50%{box-shadow:0 0 0 5px rgba(255,213,106,.32),0 0 22px rgba(255,213,106,.62)}}
+.screenShell{margin:0 auto;width:min(97%,390px);border-radius:30px;background:linear-gradient(145deg,#18343d,#091b22);box-shadow:inset 0 0 0 7px #bea06f,inset 0 0 0 9px #775a39,0 10px 24px rgba(55,37,15,.2);padding:12px}
+.gameScreen{position:relative;min-height:468px;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 0%,rgba(94,175,193,.16),transparent 34%),linear-gradient(180deg,#234c58,#183741 60%,#102a31);border:2px solid rgba(230,219,185,.18);box-shadow:inset 0 0 26px rgba(0,0,0,.24);padding:15px}
+.hud{display:flex;justify-content:space-between;gap:6px;margin-bottom:12px}
+.pill{padding:6px 8px;border-radius:99px;background:rgba(0,0,0,.25);color:#fff7df;font-size:9px;font-weight:1000}
+.instructions{text-align:center;color:#eef1e6;margin-bottom:11px;min-height:37px}.instructions strong{display:block;font-size:16px}.instructions small{display:block;margin-top:3px;font-size:9px;opacity:.62;font-weight:800}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.card{position:relative;border:0;padding:0;aspect-ratio:.88;perspective:700px;background:transparent;cursor:pointer}
+.cardInner{position:absolute;inset:0;transition:transform .38s cubic-bezier(.2,.7,.25,1);transform-style:preserve-3d}
+.card.flipped .cardInner,.card.matched .cardInner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:15px;display:grid;place-items:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.back{background:
+  radial-gradient(circle at 50% 48%,rgba(255,235,158,.16) 0 12%,transparent 13%),
+  repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,rgba(255,255,255,0) 6px 12px),
+  linear-gradient(145deg,#476f7c,#274c59);
+  border:2px solid rgba(240,225,188,.48);box-shadow:0 5px 0 rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.11)
+}
+.back:after{content:"M";width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#ffeaa7 0 9%,#dcae4d 10% 55%,#95611f 56% 100%);border:2px solid #f2d27a;color:#75501a;font-size:13px;font-weight:1000}
+.front{transform:rotateY(180deg);background:linear-gradient(145deg,#fff9e9,#eadcbd);border:2px solid rgba(116,87,46,.18);box-shadow:0 5px 0 rgba(0,0,0,.12)}
+.symbol{width:52px;height:52px;display:grid;place-items:center;position:relative}
+.symbol svg{width:62px;height:62px;display:block;filter:drop-shadow(0 2px 1px rgba(0,0,0,.08))}
+.symbolName{position:absolute;bottom:9px;left:0;right:0;text-align:center;font-size:9px;font-weight:1000;color:#6a756f}
+.card.matched .front{background:linear-gradient(145deg,#fff5c5,#e7d593);box-shadow:0 0 0 2px rgba(255,223,107,.55),0 0 20px rgba(255,213,89,.18)}
+.card.matched{pointer-events:none}
+.card:disabled{cursor:default}
+.previewBanner{position:absolute;z-index:15;left:50%;top:51%;transform:translate(-50%,-50%);padding:13px 19px;border-radius:18px;background:rgba(20,33,37,.90);color:#fff2c8;text-align:center;font-weight:1000;font-size:18px;box-shadow:0 12px 28px rgba(0,0,0,.26);opacity:0;pointer-events:none}
+.previewBanner.show{animation:previewPop .55s ease both}@keyframes previewPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.startOverlay{position:absolute;inset:0;z-index:25;display:grid;place-items:center;padding:23px;background:rgba(5,16,22,.58);backdrop-filter:blur(4px)}
+.startCard{width:min(94%,325px);padding:21px 18px;border-radius:24px;background:rgba(249,241,221,.98);color:#243139;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.25)}
+.startCard h2{margin:0 0 7px;font-size:21px}.startCard p{margin:0 0 13px;font-size:12px;line-height:1.65;color:#667174}
+.demoRow{display:flex;justify-content:center;gap:7px;margin:9px 0 14px}.demoCard{width:45px;height:55px;border-radius:11px;background:#fff5d9;border:2px solid #d6c39a;display:grid;place-items:center;font-size:22px}
+.bigBtn{width:100%;border:0;border-radius:18px;padding:13px 15px;background:linear-gradient(#df6b60,#b84943);box-shadow:0 5px 0 #7d302b;color:white;font-weight:1000;cursor:pointer}.bigBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #7d302b}
+.message{text-align:center;min-height:53px;display:grid;place-items:center;margin:9px 0 7px}.message strong{display:block;font-size:19px}.message small{display:block;font-size:10px;margin-top:2px;color:#707875;font-weight:800}
+.playBtn{width:100%;border:0;border-radius:19px;padding:14px 15px;background:linear-gradient(#d76157,#b74640);box-shadow:0 6px 0 #7e2f2b;color:#fff;font-weight:1000;cursor:pointer}.playBtn:disabled{opacity:.5}.playBtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #7e2f2b}
+.rules{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:9px;color:#67716e;font-size:9px;font-weight:900}
+.coinFly{position:fixed;z-index:1000;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;pointer-events:none;opacity:0}
+.coinReward{position:absolute;left:50%;top:55%;z-index:50;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;opacity:0;transform:translate(-50%,-50%) scale(.4)}
+.coinReward.go{animation:reward 1.05s cubic-bezier(.17,.78,.25,1) forwards}@keyframes reward{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}22%{opacity:1;transform:translate(-50%,-65%) scale(1.16)}70%{opacity:1;transform:translate(-50%,-94%) scale(1)}100%{opacity:0;transform:translate(-50%,-128%) scale(.78)}}
+.clearFlash{position:absolute;z-index:30;left:50%;top:49%;transform:translate(-50%,-50%);font-size:38px;font-weight:1000;color:#fff0a8;text-shadow:0 4px 16px rgba(75,43,7,.48);opacity:0;pointer-events:none}
+.clearFlash.go{animation:clearPop 1s cubic-bezier(.18,1.45,.34,1)}@keyframes clearPop{0%{opacity:0;transform:translate(-50%,-35%) scale(.45)}30%{opacity:1;transform:translate(-50%,-52%) scale(1.15)}75%{opacity:1;transform:translate(-50%,-55%) scale(1)}100%{opacity:0;transform:translate(-50%,-82%) scale(.9)}}
+.utility{margin-top:11px;display:flex;justify-content:space-between;gap:8px}.toggles{display:flex;gap:7px}.iconBtn,.testBtn{border:1px solid rgba(255,255,255,.13);border-radius:13px;background:rgba(0,0,0,.13);color:#f1ecdf}.iconBtn{width:39px;height:39px;font-size:17px}.iconBtn[aria-pressed="false"]{opacity:.4}.testBtn{padding:9px 10px;font-size:9px;font-weight:900}
+.noteText{text-align:center;font-size:9px;opacity:.54;line-height:1.5;margin-top:8px}
+@media(max-width:360px){.gameScreen{min-height:438px;padding:12px}.board{gap:6px}.face{border-radius:12px}.symbol svg{width:56px;height:56px}.symbolName{font-size:8px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+<style id="arcade-embed-style">
+html.embed,html.embed body{background:#173740!important;min-height:100%!important}
+html.embed body{display:block!important;overflow:auto!important}
+html.embed #app{width:100%!important;min-height:100vh!important;padding:8px!important;background:transparent!important}
+html.embed .topbar,
+html.embed .weekCard,
+html.embed .utility,
+html.embed .note,
+html.embed .noteText,
+html.embed .devTools,
+html.embed details.devTools,
+html.embed .demoGuide,
+html.embed .startOverlay{display:none!important}
+html.embed .machine{margin:0 auto!important;max-width:470px!important;box-shadow:none!important}
+html.embed .screenShell{max-width:100%!important}
+html.embed .gameScreen{max-height:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="title">MEDAL ARCADE<span class="subtitle">SUNDAY GAME DAY</span></div>
+  <div class="wallet" id="wallet"><div class="coinMini">M</div><b id="medalCount">0</b><span>まい</span></div>
+</header>
+
+<section class="weekCard">
+  <div class="weekHead"><div><strong>こんしゅうの おくすり</strong><small>7日つづけると、日曜日だけゲーム解放</small></div><span class="badge" id="badge">LOCKED</span></div>
+  <div class="weekDays" id="weekDays"></div><div class="weekStatus" id="weekStatus"></div>
+</section>
+
+<main class="machine">
+  <div class="marquee"><strong>神経衰弱</strong><small>6 PAIRS / 50 SECONDS</small></div>
+  <div class="slotArea"><span>MEDAL SLOT</span><div class="medalSlot" id="medalSlot"></div></div>
+
+  <section class="screenShell">
+    <div class="gameScreen">
+      <div class="hud"><div class="pill">PAIR <span id="pairCount">0</span>/6</div><div class="pill">TIME <span id="timeLeft">50</span></div></div>
+      <div class="instructions" id="instructions"><strong>メダルを入れてね</strong><small>6ペア全部そろえたら勝ち</small></div>
+      <div class="board" id="board"></div>
+      <div class="previewBanner" id="previewBanner">2.5秒だけ おぼえよう！</div>
+      <div class="clearFlash" id="clearFlash">CLEAR!</div>
+
+      <div class="startOverlay" id="startOverlay">
+        <div class="startCard">
+          <h2>神経衰弱</h2>
+          <p>最初に2.5秒だけ全部見えます。50秒以内に同じ絵を6ペアそろえよう。</p>
+          <div class="demoRow"><div class="demoCard">🐱</div><div class="demoCard">🐰</div><div class="demoCard">🌼</div></div>
+          <button class="bigBtn" id="trialBtn">▶ 試しにあそぶ</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="message" id="message"><div><strong>メダルを入れてスタート</strong><small>6ペア全部そろえるとメダル1枚GET</small></div></div>
+  <button class="playBtn" id="playBtn">🪙 メダルを入れてスタート</button>
+  <div class="rules"><span>12枚</span><span>6ペア</span><span>50秒</span></div>
+  <div class="coinReward" id="coinReward">+1</div>
+</main>
+
+<div class="utility">
+  <div class="toggles"><button class="iconBtn" id="soundBtn" aria-pressed="true">♪</button><button class="iconBtn" id="vibeBtn" aria-pressed="true">⌁</button></div>
+  <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
+</div>
+<div class="utility"><button class="testBtn" id="testWeekBtn">試作：今週7日達成</button><button class="testBtn" id="testSundayBtn">試作：日曜として確認</button></div>
+<p class="noteText">図柄は、ねこ・いぬ・うさぎ・くま・はな・ちょうちょ。やさしいイラストとひらがなで区別できます。</p>
+<div class="coinFly" id="coinFly">M</div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+const STORE='medicine-medal-arcade-wallet-v2';
+const SETTINGS='medicine-medal-arcade-settings-v1';
+const ADHERENCE='medicine-medal-weekly-adherence-v1';
+const DEBUG='medicine-medal-arcade-debug-v1';
+const TZ='Asia/Tokyo';
+
+const $=id=>document.getElementById(id);
+const medalCount=$('medalCount'),walletEl=$('wallet'),weekDays=$('weekDays'),weekStatus=$('weekStatus'),badge=$('badge');
+const medalSlot=$('medalSlot'),coinFly=$('coinFly'),coinReward=$('coinReward');
+const playBtn=$('playBtn'),trialBtn=$('trialBtn'),startOverlay=$('startOverlay');
+const boardEl=$('board'),pairCountEl=$('pairCount'),timeLeftEl=$('timeLeft'),instructions=$('instructions'),message=$('message');
+const previewBanner=$('previewBanner'),clearFlash=$('clearFlash');
+const soundBtn=$('soundBtn'),vibeBtn=$('vibeBtn'),testMedalBtn=$('testMedalBtn'),testWeekBtn=$('testWeekBtn'),testSundayBtn=$('testSundayBtn');
+
+let wallet=loadInt(STORE,0);
+let settings=loadJson(SETTINGS,{sound:true,vibe:true});
+let adherence=loadJson(ADHERENCE,{doneDates:{}});
+let debug=loadJson(DEBUG,{sunday:false});
+if(!adherence.doneDates)adherence.doneDates={};
+
+const MOTIFS=[
+  {id:'cat',name:'ねこ'},
+  {id:'dog',name:'いぬ'},
+  {id:'rabbit',name:'うさぎ'},
+  {id:'bear',name:'くま'},
+  {id:'flower',name:'はな'},
+  {id:'butterfly',name:'ちょうちょ'}
+];
+
+function motifSvg(id){
+  const common='stroke=\"#5c574f\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"';
+  const svg={
+    cat:`<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M27 36 L20 17 L39 29 Q50 23 61 29 L80 17 L73 37 Q82 48 78 63 Q73 82 50 84 Q27 82 22 63 Q18 48 27 36Z\" fill=\"#f1b56c\" ${common}/><circle cx=\"39\" cy=\"53\" r=\"4\" fill=\"#4c4a46\"/><circle cx=\"61\" cy=\"53\" r=\"4\" fill=\"#4c4a46\"/><path d=\"M46 63 Q50 67 54 63 M50 62 V68 M32 64 L19 61 M32 69 L18 70 M68 64 L81 61 M68 69 L82 70\" fill=\"none\" ${common}/></svg>`,
+    dog:`<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M31 31 Q50 20 69 31 Q82 42 77 64 Q71 83 50 84 Q29 83 23 64 Q18 42 31 31Z\" fill=\"#d7a56e\" ${common}/><path d=\"M30 34 Q15 29 13 46 Q14 61 28 62\" fill=\"#9f724f\" ${common}/><path d=\"M70 34 Q85 29 87 46 Q86 61 72 62\" fill=\"#9f724f\" ${common}/><circle cx=\"39\" cy=\"53\" r=\"4\" fill=\"#484640\"/><circle cx=\"61\" cy=\"53\" r=\"4\" fill=\"#484640\"/><ellipse cx=\"50\" cy=\"65\" rx=\"7\" ry=\"5\" fill=\"#514842\"/><path d=\"M45 71 Q50 76 55 71\" fill=\"none\" ${common}/></svg>`,
+    rabbit:`<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M35 34 Q25 9 34 6 Q44 6 47 32 M65 34 Q75 9 66 6 Q56 6 53 32\" fill=\"#f4dfcf\" ${common}/><ellipse cx=\"50\" cy=\"58\" rx=\"28\" ry=\"27\" fill=\"#f4dfcf\" ${common}/><circle cx=\"40\" cy=\"54\" r=\"4\" fill=\"#4d4b46\"/><circle cx=\"60\" cy=\"54\" r=\"4\" fill=\"#4d4b46\"/><path d=\"M46 65 Q50 69 54 65 M50 65 V71\" fill=\"none\" ${common}/><ellipse cx=\"31\" cy=\"65\" rx=\"5\" ry=\"3\" fill=\"#efb7b4\"/><ellipse cx=\"69\" cy=\"65\" rx=\"5\" ry=\"3\" fill=\"#efb7b4\"/></svg>`,
+    bear:`<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><circle cx=\"31\" cy=\"30\" r=\"12\" fill=\"#9f744e\" ${common}/><circle cx=\"69\" cy=\"30\" r=\"12\" fill=\"#9f744e\" ${common}/><circle cx=\"50\" cy=\"57\" r=\"30\" fill=\"#b98559\" ${common}/><circle cx=\"40\" cy=\"52\" r=\"4\" fill=\"#453f39\"/><circle cx=\"60\" cy=\"52\" r=\"4\" fill=\"#453f39\"/><ellipse cx=\"50\" cy=\"65\" rx=\"12\" ry=\"9\" fill=\"#e2bd91\" ${common}/><ellipse cx=\"50\" cy=\"63\" rx=\"5\" ry=\"4\" fill=\"#4a4038\"/></svg>`,
+    flower:`<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M50 56 Q37 78 31 90 M50 56 Q63 75 71 88\" fill=\"none\" stroke=\"#5f966e\" stroke-width=\"5\" stroke-linecap=\"round\"/><ellipse cx=\"36\" cy=\"76\" rx=\"10\" ry=\"5\" transform=\"rotate(-28 36 76)\" fill=\"#7fbd83\"/><ellipse cx=\"64\" cy=\"75\" rx=\"10\" ry=\"5\" transform=\"rotate(28 64 75)\" fill=\"#7fbd83\"/><g fill=\"#ef8e9c\" ${common}><circle cx=\"50\" cy=\"26\" r=\"14\"/><circle cx=\"69\" cy=\"42\" r=\"14\"/><circle cx=\"61\" cy=\"64\" r=\"14\"/><circle cx=\"39\" cy=\"64\" r=\"14\"/><circle cx=\"31\" cy=\"42\" r=\"14\"/></g><circle cx=\"50\" cy=\"46\" r=\"13\" fill=\"#f4cb62\" ${common}/></svg>`,
+    butterfly:`<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M45 47 Q22 16 12 31 Q8 48 39 58 Q14 59 18 78 Q29 88 45 62\" fill=\"#8bc3df\" ${common}/><path d=\"M55 47 Q78 16 88 31 Q92 48 61 58 Q86 59 82 78 Q71 88 55 62\" fill=\"#e9a1c0\" ${common}/><ellipse cx=\"50\" cy=\"55\" rx=\"6\" ry=\"22\" fill=\"#715a47\" ${common}/><path d=\"M47 34 Q40 23 35 21 M53 34 Q60 23 65 21\" fill=\"none\" ${common}/></svg>`
+  };
+  return svg[id] || `<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><circle cx=\"50\" cy=\"50\" r=\"28\" fill=\"#d8cfb7\"/><text x=\"50\" y=\"60\" text-anchor=\"middle\" font-size=\"34\" fill=\"#6a6256\">?</text></svg>`;
+}
+
+let state='idle',audio=null,cards=[],first=null,second=null,lock=false,pairs=0;
+let timerId=0,endAt=0;
+
+renderAll();renderSettings();buildEmptyBoard();
+
+trialBtn.onclick=enableTrial;
+playBtn.onclick=insertMedal;
+
+soundBtn.onclick=()=>{settings.sound=!settings.sound;save(SETTINGS,settings);renderSettings();if(settings.sound)tone(620,.05,.02)};
+vibeBtn.onclick=()=>{settings.vibe=!settings.vibe;save(SETTINGS,settings);renderSettings();vibrate(8)};
+testMedalBtn.onclick=markMedicationDone;
+testWeekBtn.onclick=()=>{weekKeys().forEach(k=>adherence.doneDates[k]=true);save(ADHERENCE,adherence);renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.07,.02),70)};
+testSundayBtn.onclick=()=>{debug.sunday=!debug.sunday;save(DEBUG,debug);renderAll()};
+
+function enableTrial(){
+  weekKeys().forEach(k=>adherence.doneDates[k]=true);
+  save(ADHERENCE,adherence);
+  debug.sunday=true;save(DEBUG,debug);
+  if(wallet<3){wallet=3;localStorage.setItem(STORE,String(wallet))}
+  startOverlay.style.display='none';
+  renderAll();
+  setMessage('準備OK','メダルを入れてスタート')
+}
+
+function insertMedal(){
+  if(state!=='idle'&&state!=='over')return;
+  if(!isUnlocked()){setMessage('まだ遊べません','1週間つづけた日曜日に解放されます');return}
+  if(wallet<1){setMessage('メダルがありません','服薬できた日に1枚たまります');return}
+
+  state='inserting';playBtn.disabled=true;
+  const wr=walletEl.getBoundingClientRect(),sr=medalSlot.getBoundingClientRect();
+  coinFly.style.opacity=1;
+  coinFly.style.left=(wr.left+wr.width/2-25)+'px';
+  coinFly.style.top=(wr.top+wr.height/2-25)+'px';
+  const tx=(sr.left+sr.width/2)-(wr.left+wr.width/2);
+  const ty=(sr.top+sr.height/2)-(wr.top+wr.height/2);
+
+  const a=coinFly.animate([
+    {transform:'translate(0,0) scale(.9) rotate(0)'},
+    {transform:`translate(${tx*.55}px,${ty*.35}px) scale(1.08) rotate(240deg)`,offset:.55},
+    {transform:`translate(${tx}px,${ty}px) scale(.48) rotate(520deg)`,opacity:1}
+  ],{duration:780,easing:'cubic-bezier(.2,.72,.25,1)',fill:'forwards'});
+
+  tone(520,.045,.02);setTimeout(()=>tone(760,.05,.018),260);
+
+  a.onfinish=()=>{
+    coinFly.style.opacity=0;coinFly.getAnimations().forEach(x=>x.cancel());
+    wallet--;localStorage.setItem(STORE,String(wallet));renderWallet();
+    medalSlot.classList.remove('flash');void medalSlot.offsetWidth;medalSlot.classList.add('flash');
+    metalClink();vibrate([8,24,8]);
+    setTimeout(startPreview,320)
+  }
+}
+
+function startPreview(){
+  clearInterval(timerId);
+  pairs=0;pairCountEl.textContent='0';timeLeftEl.textContent='50';
+  first=second=null;lock=true;
+  cards=shuffle([...MOTIFS,...MOTIFS].map((m,i)=>({...m,key:i,matched:false,flipped:true})));
+  state='preview';
+  renderCards();
+  previewBanner.classList.remove('show');void previewBanner.offsetWidth;previewBanner.classList.add('show');
+  instructions.innerHTML='<strong>おぼえよう！</strong><small>2.5秒後にカードが裏返ります</small>';
+  setMessage('2.5秒だけ全部見える！','場所を覚えよう');
+  tone(660,.05,.02);setTimeout(()=>tone(800,.05,.018),90);
+
+  setTimeout(()=>{
+    if(state!=='preview')return;
+    previewBanner.classList.remove('show');
+    cards.forEach(c=>c.flipped=false);
+    state='playing';lock=false;
+    renderCards();
+    instructions.innerHTML='<strong>同じ絵を2枚見つけよう</strong><small>6ペア全部そろえたら勝ち</small>';
+    setMessage('スタート！','カードを2枚めくろう');
+    endAt=performance.now()+50000;
+    timerId=setInterval(updateTimer,100);
+    updateTimer();
+    renderAccess()
+  },2500)
+}
+
+function renderCards(){
+  boardEl.innerHTML='';
+  cards.forEach((c,i)=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='card'+(c.flipped?' flipped':'')+(c.matched?' matched':'');
+    btn.disabled=c.matched||state==='preview';
+    btn.setAttribute('aria-label',c.flipped||c.matched?c.name:'うら向きのカード');
+    btn.innerHTML=`
+      <div class="cardInner">
+        <div class="face back"></div>
+        <div class="face front">
+          <div class="symbol">${motifSvg(c.id)}</div>
+          <div class="symbolName">${c.name}</div>
+        </div>
+      </div>`;
+    btn.onclick=()=>flipCard(i);
+    boardEl.appendChild(btn)
+  })
+}
+
+function flipCard(i){
+  if(state!=='playing'||lock)return;
+  const c=cards[i];
+  if(c.flipped||c.matched)return;
+
+  c.flipped=true;
+  renderCards();
+  tone(470,.04,.018);
+  vibrate(3);
+
+  if(first===null){
+    first=i;
+    return
+  }
+
+  second=i;
+  lock=true;
+
+  if(cards[first].id===cards[second].id){
+    setTimeout(()=>{
+      cards[first].matched=true;
+      cards[second].matched=true;
+      pairs++;
+      pairCountEl.textContent=pairs;
+      tone(620,.06,.025);setTimeout(()=>tone(790,.075,.022),65);vibrate([5,18,6]);
+      first=second=null;lock=false;
+      renderCards();
+
+      if(pairs===6){
+        finishWin()
+      }else{
+        instructions.innerHTML=`<strong>ペア発見！</strong><small>あと ${6-pairs} ペア</small>`
+      }
+    },340)
+  }else{
+    setTimeout(()=>{
+      cards[first].flipped=false;
+      cards[second].flipped=false;
+      first=second=null;lock=false;
+      renderCards();
+      tone(280,.05,.012);
+      instructions.innerHTML='<strong>もう一度</strong><small>場所を覚えておこう</small>'
+    },700)
+  }
+}
+
+function updateTimer(){
+  if(state!=='playing')return;
+  const ms=Math.max(0,endAt-performance.now());
+  const sec=Math.ceil(ms/1000);
+  timeLeftEl.textContent=sec;
+  if(ms<=0){
+    clearInterval(timerId);
+    finishLose()
+  }else if(sec<=10){
+    timeLeftEl.parentElement.style.background='rgba(145,56,51,.62)'
+  }
+}
+
+function finishWin(){
+  clearInterval(timerId);
+  state='over';lock=true;
+  clearFlash.classList.remove('go');void clearFlash.offsetWidth;clearFlash.classList.add('go');
+  instructions.innerHTML='<strong>ぜんぶそろった！</strong><small>6ペア完成</small>';
+  setMessage('クリア！','メダル1枚GET');
+  tone(523,.07,.03);setTimeout(()=>tone(659,.08,.03),80);setTimeout(()=>tone(784,.13,.035),160);
+  vibrate([10,30,15]);
+  setTimeout(awardMedal,260);
+  renderAccess()
+}
+
+function finishLose(){
+  state='over';lock=true;
+  cards.forEach(c=>c.flipped=true);
+  renderCards();
+  instructions.innerHTML=`<strong>タイムアップ</strong><small>${pairs}/6 ペアそろいました</small>`;
+  setMessage('おしい！',`今回は ${pairs} ペア`);
+  tone(310,.07,.018);setTimeout(()=>tone(245,.10,.015),75);vibrate(10);
+  renderAccess()
+}
+
+function awardMedal(){
+  wallet++;
+  localStorage.setItem(STORE,String(wallet));
+  renderWallet();
+  coinReward.classList.remove('go');void coinReward.offsetWidth;coinReward.classList.add('go')
+}
+
+function buildEmptyBoard(){
+  cards=Array.from({length:12},(_,i)=>({id:'',symbol:'?',name:'',key:i,matched:false,flipped:false}));
+  renderCards()
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]]
+  }
+  return arr
+}
+
+function setMessage(a,b){message.innerHTML=`<div><strong>${a}</strong><small>${b}</small></div>`}
+
+function markMedicationDone(){
+  const k=currentDateKey();
+  if(adherence.doneDates[k]){setMessage('今日は記録ずみ','メダルは受け取りずみ');return}
+  adherence.doneDates[k]=true;wallet++;
+  localStorage.setItem(STORE,String(wallet));save(ADHERENCE,adherence);
+  renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(8)
+}
+
+function renderAll(){renderWallet();renderWeek();renderAccess()}
+function renderWallet(){medalCount.textContent=wallet}
+
+function renderWeek(){
+  const keys=weekKeys(),names=['月','火','水','木','金','土','日'];weekDays.innerHTML='';
+  keys.forEach((k,i)=>{
+    const d=document.createElement('div');d.className='dayCell'+(adherence.doneDates[k]?' done':'');
+    d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;weekDays.appendChild(d)
+  });
+  const count=keys.filter(k=>adherence.doneDates[k]).length;
+  if(isUnlocked()){
+    badge.textContent='OPEN';badge.classList.add('open');
+    weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b> ${wallet}枚使えます。`
+  }else{
+    badge.textContent='LOCKED';badge.classList.remove('open');
+    weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは7日つづけた日曜日に使えます。`
+  }
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認'
+}
+
+function renderAccess(){
+  const ok=isUnlocked()&&wallet>0&&(state==='idle'||state==='over');
+  playBtn.disabled=!ok;
+  if(['inserting','preview','playing'].includes(state)){playBtn.disabled=true;return}
+  if(!isSunday())playBtn.textContent='🔒 日曜日に解放';
+  else if(!weekComplete())playBtn.textContent='🔒 今週7日達成で解放';
+  else if(wallet<1)playBtn.textContent='メダルがありません';
+  else playBtn.textContent='🪙 メダルを入れてスタート'
+}
+
+function renderSettings(){
+  soundBtn.setAttribute('aria-pressed',String(settings.sound));
+  vibeBtn.setAttribute('aria-pressed',String(settings.vibe))
+}
+
+function isUnlocked(){return isSunday()&&weekComplete()}
+function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k])}
+function isSunday(){return dayOfWeek(currentDateKey())===0}
+function weekKeys(){const s=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(s,i))}
+function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real}
+function todayJstKey(){
+  const ps=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const p=Object.fromEntries(ps.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  return `${p.year}-${p.month}-${p.day}`
+}
+function weekStartKey(k){const d=parseKey(k),off=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-off);return keyFromDate(d)}
+function addDaysKey(k,n){const d=parseKey(k);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d)}
+function dayOfWeek(k){return parseKey(k).getUTCDay()}
+function parseKey(k){return new Date(k+'T00:00:00Z')}
+function keyFromDate(d){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`}
+
+function loadInt(k,f){const n=parseInt(localStorage.getItem(k),10);return Number.isFinite(n)?n:f}
+function loadJson(k,f){try{return {...f,...JSON.parse(localStorage.getItem(k)||'{}')}}catch(_){return f}}
+function save(k,v){localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v))}
+function getAudio(){audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
+function tone(freq,dur=.07,vol=.02,type='square'){
+  if(!settings.sound)return;
+  try{
+    const a=getAudio(),o=a.createOscillator(),g=a.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol,a.currentTime+.006);
+    g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);
+    o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+.02)
+  }catch(_){}
+}
+function metalClink(){tone(1450,.035,.025,'square');setTimeout(()=>tone(860,.07,.018,'triangle'),30)}
+function vibrate(p){if(settings.vibe&&navigator.vibrate)navigator.vibrate(p)}
+})();
+</script>
+</body>
+</html>

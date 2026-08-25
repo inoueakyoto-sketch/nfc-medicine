@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#18343a">
+<title>じゃんけんアーケード v0.2</title>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');</script>
+<style>
+:root{
+  --bg:#17343a;
+  --panel:#f4ead6;
+  --panel2:#eadabb;
+  --ink:#1e2e31;
+  --muted:#647173;
+  --gold:#d9aa45;
+  --gold2:#f0cf78;
+  --red:#c95c52;
+  --green:#4d8c72;
+  --blue:#4f8295;
+  --shadow:0 22px 55px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:#102b30;color:var(--ink);font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif}
+body{display:flex;justify-content:center;min-height:100dvh;overflow-x:hidden}
+button{font:inherit;color:inherit}
+#app{position:relative;width:min(100vw,480px);min-height:100dvh;padding:max(14px,env(safe-area-inset-top)) 14px max(18px,env(safe-area-inset-bottom));background:
+  radial-gradient(circle at 50% -5%,rgba(255,244,197,.12),transparent 34%),
+  linear-gradient(180deg,#214750 0%,#17383f 42%,#112d33 100%);overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px;color:#f8f1df}
+.title{font-weight:900;letter-spacing:.08em;font-size:13px}.subtitle{display:block;font-weight:600;opacity:.64;font-size:10px;margin-top:2px;letter-spacing:.05em}
+.wallet{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 7px;border:1px solid rgba(255,255,255,.15);border-radius:18px;background:rgba(0,0,0,.16);box-shadow:inset 0 1px rgba(255,255,255,.06)}
+.coinMini{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#ffe9a7 0 10%,var(--gold2) 11% 44%,var(--gold) 45% 73%,#a57225 74% 100%);border:2px solid #f5d983;color:#845d20;font-size:11px;font-weight:1000;box-shadow:0 2px 0 #764d17}
+.wallet b{font-variant-numeric:tabular-nums;font-size:18px;min-width:22px;text-align:center}.wallet span{font-size:11px;opacity:.75}
+.weekCard{margin:0 0 13px;padding:12px 13px;border:1px solid rgba(255,255,255,.14);border-radius:22px;background:rgba(5,22,25,.28);color:#f8f1df;box-shadow:inset 0 1px rgba(255,255,255,.05)}
+.weekHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.weekHead strong{font-size:13px;letter-spacing:.04em}.weekHead small{display:block;margin-top:2px;font-size:9px;opacity:.58;font-weight:700}.accessBadge{flex:0 0 auto;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.2);font-size:9px;font-weight:900;letter-spacing:.04em}.accessBadge.open{background:rgba(77,140,114,.34);color:#dff7e9;box-shadow:inset 0 0 0 1px rgba(167,231,197,.24)}
+.weekDays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}.dayCell{text-align:center;font-size:9px;font-weight:900;opacity:.7}.dayDot{width:28px;height:28px;max-width:100%;aspect-ratio:1;border-radius:50%;margin:4px auto 0;display:grid;place-items:center;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.32);font-size:13px}.dayCell.done{opacity:1}.dayCell.done .dayDot{background:radial-gradient(circle at 35% 30%,#ffe9a7 0 9%,#e0b252 10% 52%,#a97425 53% 100%);border-color:#efd27e;color:#75501c;box-shadow:0 2px 0 rgba(80,45,10,.45)}.dayCell.today .dayDot{outline:2px solid rgba(255,255,255,.74);outline-offset:2px}.weekStatus{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.09);font-size:11px;font-weight:800;line-height:1.55}.weekStatus small{display:block;opacity:.58;font-size:9px;margin-top:2px;font-weight:700}
+.machine{position:relative;background:linear-gradient(155deg,#f8efdf,#e8d5b3);border-radius:31px;padding:16px 15px 18px;box-shadow:var(--shadow),inset 0 2px rgba(255,255,255,.85),inset 0 -4px rgba(117,78,34,.08);border:1px solid rgba(255,255,255,.66);overflow:hidden}
+.machine:before{content:"";position:absolute;left:14px;right:14px;top:12px;height:7px;border-radius:99px;background:linear-gradient(90deg,#b84d47 0 18%,#dfaa4d 18% 39%,#4d8c72 39% 61%,#4f8295 61% 82%,#b84d47 82%);opacity:.72}
+.marquee{text-align:center;margin-top:8px;margin-bottom:10px}.marquee strong{display:block;font-size:19px;letter-spacing:.08em}.marquee small{font-size:11px;color:#728081;font-weight:700}
+.screenShell{position:relative;margin:0 auto;width:min(92%,348px);aspect-ratio:1/1;border-radius:34px;background:linear-gradient(145deg,#18383e,#0e252a);box-shadow:inset 0 0 0 7px #c6aa7b,inset 0 0 0 9px #80643f,0 10px 24px rgba(55,37,15,.18);display:grid;place-items:center;overflow:hidden}
+.screenShell:after{content:"";position:absolute;inset:11px;border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.05),transparent 35%);pointer-events:none}
+.ledRing{position:absolute;inset:9px;pointer-events:none}.led{position:absolute;width:9px;height:9px;border-radius:50%;background:#624f35;box-shadow:0 0 0 1px rgba(0,0,0,.32)}.led.on{background:#ffd46d;box-shadow:0 0 8px #ffcd52,0 0 16px rgba(255,196,62,.58)}
+.centerDisplay{position:relative;z-index:2;width:71%;height:71%;border-radius:28px;background:radial-gradient(circle at 50% 35%,#325c61 0%,#21454a 44%,#17363b 100%);border:2px solid rgba(230,219,185,.2);display:grid;grid-template-rows:auto 1fr auto;align-items:center;text-align:center;padding:15px;color:#fff9e9;box-shadow:inset 0 0 24px rgba(0,0,0,.25)}
+.call{font-size:15px;font-weight:900;letter-spacing:.08em;min-height:23px;color:#f2dfaa;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.cpuHand{font-size:82px;line-height:1;filter:drop-shadow(0 5px 0 rgba(0,0,0,.18));transform:scale(.92);transition:transform .2s cubic-bezier(.2,1.3,.35,1),filter .2s}.cpuHand.reveal{transform:scale(1.08)}
+.cpuLabel{font-size:11px;opacity:.62;font-weight:800;letter-spacing:.16em}
+.vsStrip{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px 0 10px}.playerChoice{display:flex;align-items:center;gap:8px;min-width:135px;padding:8px 12px;border-radius:18px;background:rgba(255,255,255,.6);box-shadow:inset 0 1px #fff;border:1px solid rgba(108,79,37,.1)}.playerChoice .hand{font-size:30px}.playerChoice .text{font-size:11px;color:#6f786f;font-weight:800}.playerChoice strong{display:block;font-size:13px;color:#2d3b3d}.vs{font-weight:1000;color:#967448;font-size:12px}
+.message{text-align:center;min-height:48px;display:grid;place-items:center;margin:2px 0 10px}.message strong{display:block;font-size:20px;letter-spacing:.04em}.message small{display:block;margin-top:2px;font-size:11px;color:#717977;font-weight:700}.message.win strong{color:#34745d}.message.lose strong{color:#9a514c}.message.draw strong{color:#806638}
+.handButtons{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.handBtn{position:relative;border:0;border-radius:22px;padding:10px 5px 11px;background:linear-gradient(#fffaf0,#eadcc1);box-shadow:0 6px 0 #b89565,0 10px 17px rgba(90,62,28,.14),inset 0 1px #fff;cursor:pointer;transition:transform .07s,box-shadow .07s,filter .15s}.handBtn:active:not(:disabled){transform:translateY(5px);box-shadow:0 1px 0 #b89565,0 4px 9px rgba(90,62,28,.12)}.handBtn:disabled{filter:grayscale(.35);opacity:.48;cursor:default}.handBtn .emoji{display:block;font-size:42px;line-height:1.05}.handBtn b{display:block;margin-top:4px;font-size:14px}.handBtn small{display:block;font-size:9px;color:#7d817b;font-weight:800}
+.controls{margin-top:13px;display:grid;gap:9px}.playBtn{width:100%;border:0;border-radius:20px;padding:14px 16px;background:linear-gradient(180deg,#d86459,#b7443f);box-shadow:0 6px 0 #812e2b,0 10px 18px rgba(110,40,35,.19);color:white;font-weight:1000;letter-spacing:.03em;cursor:pointer}.playBtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #812e2b,0 5px 10px rgba(110,40,35,.15)}.playBtn:disabled{opacity:.48;cursor:default}.playBtn .cost{opacity:.78;font-size:11px;margin-left:4px}
+.rules{display:flex;justify-content:center;gap:14px;margin-top:10px;color:#6c766f;font-size:10px;font-weight:800}.rules span{display:flex;align-items:center;gap:4px}
+.utility{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#e6eee9}.toggles{display:flex;gap:7px}.iconBtn{width:39px;height:39px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(0,0,0,.14);color:#f7f1df;font-size:17px}.iconBtn[aria-pressed="false"]{opacity:.42}.testBtn{border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(0,0,0,.12);color:#e6eee9;padding:9px 11px;font-size:10px;font-weight:800;cursor:pointer}
+.note{margin:9px 6px 0;text-align:center;color:rgba(235,242,237,.55);font-size:9px;line-height:1.5}
+.coinDrop{position:absolute;z-index:80;width:47px;height:47px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff0b7 0 9%,#f0cf78 10% 44%,#d29d37 45% 75%,#9b661d 76%);border:3px solid #f7dc88;color:#805516;font-weight:1000;box-shadow:0 6px 0 #805116,0 10px 25px rgba(0,0,0,.26);left:50%;top:40%;transform:translate(-50%,-50%) scale(.35);opacity:0;pointer-events:none}.coinDrop.go{animation:coinDrop 1s cubic-bezier(.18,.78,.23,1) forwards}@keyframes coinDrop{0%{opacity:0;transform:translate(-50%,-120%) scale(.3) rotate(-80deg)}25%{opacity:1;transform:translate(-50%,-55%) scale(1.1) rotate(8deg)}65%{opacity:1;transform:translate(-50%,75%) scale(1) rotate(22deg)}100%{opacity:0;transform:translate(-50%,260%) scale(.65) rotate(65deg)}}
+.flash{position:absolute;inset:0;pointer-events:none;z-index:70;opacity:0}.flash.win{background:radial-gradient(circle,rgba(255,238,151,.38),transparent 55%);animation:flash .55s ease-out}.flash.lose{background:radial-gradient(circle,rgba(215,105,91,.13),transparent 58%);animation:flash .45s ease-out}@keyframes flash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+.shake{animation:shake .28s ease-out}@keyframes shake{20%{transform:translateX(-4px)}45%{transform:translateX(4px)}70%{transform:translateX(-2px)}100%{transform:translateX(0)}}
+@media (max-height:760px){.machine{padding-top:12px}.marquee{margin-bottom:7px}.marquee strong{font-size:16px}.screenShell{width:min(78vw,290px)}.cpuHand{font-size:68px}.handBtn .emoji{font-size:36px}.handBtn{padding:7px 4px 8px}.controls{margin-top:9px}.utility{margin-top:8px}}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+<style id="arcade-embed-style">
+html.embed,html.embed body{background:#173740!important;min-height:100%!important}
+html.embed body{display:block!important;overflow:auto!important}
+html.embed #app{width:100%!important;min-height:100vh!important;padding:8px!important;background:transparent!important}
+html.embed .topbar,
+html.embed .weekCard,
+html.embed .utility,
+html.embed .note,
+html.embed .noteText,
+html.embed .devTools,
+html.embed details.devTools,
+html.embed .demoGuide,
+html.embed .startOverlay{display:none!important}
+html.embed .machine{margin:0 auto!important;max-width:470px!important;box-shadow:none!important}
+html.embed .screenShell{max-width:100%!important}
+html.embed .gameScreen{max-height:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="title">MEDAL ARCADE<span class="subtitle">MINI GAME 01</span></div>
+    <div class="wallet" aria-label="所持メダル"><i class="coinMini">M</i><b id="medalCount">0</b><span>まい</span></div>
+  </div>
+
+  <section class="weekCard" aria-label="今週の服薬とゲーム解放状況">
+    <div class="weekHead">
+      <div><strong>今週の服薬</strong><small>7日つづけると、日曜日だけゲーム解放</small></div>
+      <span class="accessBadge" id="accessBadge">LOCKED</span>
+    </div>
+    <div class="weekDays" id="weekDays"></div>
+    <div class="weekStatus" id="weekStatus"></div>
+  </section>
+
+  <main class="machine" id="machine">
+    <div class="marquee"><strong>じゃんけん</strong><small>1 PLAY / MEDAL 1</small></div>
+
+    <section class="screenShell" aria-label="じゃんけん表示">
+      <div class="ledRing" id="ledRing" aria-hidden="true"></div>
+      <div class="centerDisplay">
+        <div class="call" id="callText">メダルをいれてね</div>
+        <div class="cpuHand" id="cpuHand">？</div>
+        <div class="cpuLabel">ARCADE</div>
+      </div>
+    </section>
+
+    <div class="vsStrip">
+      <div class="playerChoice"><span class="hand" id="playerHand">・</span><span class="text">あなた<strong id="playerText">まだえらんでいない</strong></span></div>
+      <div class="vs">VS</div>
+    </div>
+
+    <div class="message" id="message"><div><strong>まずは1回あそぼう</strong><small>勝つとメダル1枚GET</small></div></div>
+
+    <div class="handButtons" aria-label="出す手を選ぶ">
+      <button class="handBtn" data-hand="rock" disabled><span class="emoji">✊</span><b>グー</b><small>ROCK</small></button>
+      <button class="handBtn" data-hand="scissors" disabled><span class="emoji">✌️</span><b>チョキ</b><small>SCISSORS</small></button>
+      <button class="handBtn" data-hand="paper" disabled><span class="emoji">✋</span><b>パー</b><small>PAPER</small></button>
+    </div>
+
+    <div class="controls">
+      <button class="playBtn" id="playBtn">メダルをつかって あそぶ <span class="cost">-1</span></button>
+    </div>
+    <div class="rules"><span>△ あいこ：つづく</span><span>○ かち：+1</span><span>× まけ：終了</span></div>
+    <div class="flash" id="flash"></div>
+    <div class="coinDrop" id="coinDrop">+1</div>
+  </main>
+
+  <div class="utility">
+    <div class="toggles">
+      <button class="iconBtn" id="soundBtn" aria-label="音のオン・オフ" aria-pressed="true">♪</button>
+      <button class="iconBtn" id="vibeBtn" aria-label="振動のオン・オフ" aria-pressed="true">⌁</button>
+    </div>
+    <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
+  </div>
+  <div class="utility" style="margin-top:7px">
+    <button class="testBtn" id="testWeekBtn">試作：今週7日達成</button>
+    <button class="testBtn" id="testSundayBtn">試作：日曜として確認</button>
+  </div>
+  <p class="note">試作版。本番では服薬完了時にメダルを貯め、今週7日すべて服薬できた日曜日だけゲームで使えます。未使用メダルは消えず、次の解放日まで再びロックされます。</p>
+</div>
+<script>
+(()=>{
+'use strict';
+const STORE='medicine-medal-arcade-wallet-v2';
+const LEGACY_STORE='medicine-medal-arcade-wallet-v1';
+const SETTINGS='medicine-medal-arcade-settings-v1';
+const ADHERENCE='medicine-medal-weekly-adherence-v1';
+const DEBUG='medicine-medal-arcade-debug-v1';
+const TZ='Asia/Tokyo';
+const hands={rock:{emoji:'✊',label:'グー'},scissors:{emoji:'✌️',label:'チョキ'},paper:{emoji:'✋',label:'パー'}};
+const keys=Object.keys(hands);
+const beats={rock:'scissors',scissors:'paper',paper:'rock'};
+const medalCount=document.getElementById('medalCount');
+const playBtn=document.getElementById('playBtn');
+const handBtns=[...document.querySelectorAll('.handBtn')];
+const callText=document.getElementById('callText');
+const cpuHand=document.getElementById('cpuHand');
+const playerHand=document.getElementById('playerHand');
+const playerText=document.getElementById('playerText');
+const message=document.getElementById('message');
+const machine=document.getElementById('machine');
+const flash=document.getElementById('flash');
+const coinDrop=document.getElementById('coinDrop');
+const soundBtn=document.getElementById('soundBtn');
+const vibeBtn=document.getElementById('vibeBtn');
+const testMedalBtn=document.getElementById('testMedalBtn');
+const testWeekBtn=document.getElementById('testWeekBtn');
+const testSundayBtn=document.getElementById('testSundayBtn');
+const weekDays=document.getElementById('weekDays');
+const weekStatus=document.getElementById('weekStatus');
+const accessBadge=document.getElementById('accessBadge');
+let wallet=loadWallet();
+let settings=loadJson(SETTINGS,{sound:true,vibe:true});
+let adherence=loadJson(ADHERENCE,{doneDates:{}}); if(!adherence.doneDates) adherence.doneDates={};
+let debug=loadJson(DEBUG,{sunday:false});
+let state='idle';
+let ledTimer=0,ledIndex=0,roundToken=0;
+let audio=null;
+setupLeds();renderAll();renderSettings();
+
+playBtn.addEventListener('click',startPlay);
+handBtns.forEach(b=>b.addEventListener('click',()=>choose(b.dataset.hand)));
+soundBtn.addEventListener('click',()=>{settings.sound=!settings.sound;saveSettings();renderSettings();if(settings.sound)tone(520,.05,.025)});
+vibeBtn.addEventListener('click',()=>{settings.vibe=!settings.vibe;saveSettings();renderSettings();vibrate(8)});
+testMedalBtn.addEventListener('click',markMedicationDone);
+testWeekBtn.addEventListener('click',()=>{weekKeys().forEach(k=>adherence.doneDates[k]=true);saveAdherence();renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(10)});
+testSundayBtn.addEventListener('click',()=>{debug.sunday=!debug.sunday;localStorage.setItem(DEBUG,JSON.stringify(debug));renderAll();tone(debug.sunday?720:420,.06,.02)});
+
+function setupLeds(){
+  const ring=document.getElementById('ledRing');
+  const n=20;
+  for(let i=0;i<n;i++){
+    const d=document.createElement('i');d.className='led';
+    const a=(Math.PI*2*i/n)-Math.PI/2;const r=46;
+    d.style.left=`calc(50% + ${Math.cos(a)*r}% - 4.5px)`;d.style.top=`calc(50% + ${Math.sin(a)*r}% - 4.5px)`;ring.appendChild(d);
+  }
+}
+function markMedicationDone(){
+  const key=currentDateKey();
+  if(adherence.doneDates[key]){setMessage('今日は記録ずみ','メダルはすでに受け取っています','draw');tone(330,.05,.015);return;}
+  adherence.doneDates[key]=true;saveAdherence();wallet++;saveWallet();renderAll();coinPulseTop();tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(10);
+  if(isUnlocked())setMessage('1週間つづいた！','今日はゲームの日。メダル解放！','win');
+  else setMessage('メダルを1枚ためた','日曜日まで大切にためておこう','');
+}
+function startPlay(){
+  if(state!=='idle'&&state!=='over')return;
+  if(!isUnlocked()){setMessage(isSunday()?'まだ解放されていません':'今日はゲームの日ではありません',isSunday()?'今週7日すべての服薬で解放':'貯めたメダルは日曜日に使えます','lose');tone(220,.08,.015);vibrate(10);return;}
+  if(wallet<1){setMessage('メダルがありません','服薬できた日に1枚ずつ貯まります','lose');tone(220,.08,.015);vibrate(10);return;}
+  wallet--;saveWallet();renderAll();
+  state='ready';roundToken++;playBtn.disabled=true;
+  cpuHand.textContent='？';cpuHand.classList.remove('reveal');playerHand.textContent='・';playerText.textContent='まだえらんでいない';
+  setMessage('じゃんけん開始！','光っているあいだに手をえらぼう','');callText.textContent='じゃん… けん…';enableHands(true);startLedSweep();tone(330,.07,.022);setTimeout(()=>tone(392,.07,.022),130);vibrate(6);
+}
+function choose(hand){
+  if(state!=='ready')return;state='reveal';enableHands(false);stopLedSweep();const token=++roundToken;
+  playerHand.textContent=hands[hand].emoji;playerText.textContent=hands[hand].label;callText.textContent='ぽん！';tone(520,.045,.03);vibrate(7);
+  const cpu=randomHand();setTimeout(()=>{if(token!==roundToken)return;cpuHand.textContent=hands[cpu].emoji;cpuHand.classList.add('reveal');tone(620,.05,.025);resolve(hand,cpu,token);},260);
+}
+function resolve(player,cpu,token){
+  if(player===cpu){state='draw';setMessage('あいこ！','追加メダルなし。このままもう一度','draw');pulseFlash('');tone(440,.05,.02);setTimeout(()=>tone(440,.05,.02),80);setTimeout(()=>{if(token!==roundToken)return;state='ready';cpuHand.textContent='？';cpuHand.classList.remove('reveal');playerHand.textContent='・';playerText.textContent='もう一度えらぼう';callText.textContent='あいこで…';enableHands(true);startLedSweep();},700);return;}
+  if(beats[player]===cpu){state='win';setMessage('かった！','メダルを1枚GET。この日なら続けて使える','win');callText.textContent='WIN';pulseFlash('win');tone(523,.07,.028);setTimeout(()=>tone(659,.08,.03),85);setTimeout(()=>tone(784,.13,.035),170);vibrate([12,35,18]);setTimeout(()=>awardMedal(),260);setTimeout(()=>endPlay(),1050);}
+  else{state='lose';setMessage('今回はまけ','残りメダルがあれば日曜日にまた挑戦','lose');callText.textContent='TRY AGAIN';pulseFlash('lose');machine.classList.add('shake');setTimeout(()=>machine.classList.remove('shake'),330);tone(310,.08,.018);setTimeout(()=>tone(240,.12,.016),85);vibrate(18);setTimeout(()=>endPlay(),760);}
+}
+function awardMedal(){coinDrop.classList.remove('go');void coinDrop.offsetWidth;coinDrop.classList.add('go');setTimeout(()=>{wallet++;saveWallet();renderAll();coinPulseTop();},560);}
+function endPlay(){stopLedSweep();enableHands(false);state='over';renderAll();}
+function enableHands(on){handBtns.forEach(b=>b.disabled=!on)}
+function randomHand(){if(window.crypto&&crypto.getRandomValues){const a=new Uint32Array(1);crypto.getRandomValues(a);return keys[a[0]%3]}return keys[Math.floor(Math.random()*3)];}
+function startLedSweep(){stopLedSweep();const leds=[...document.querySelectorAll('.led')];ledTimer=setInterval(()=>{leds.forEach((d,i)=>d.classList.toggle('on',i===ledIndex||i===(ledIndex+1)%leds.length));ledIndex=(ledIndex+1)%leds.length;},70)}
+function stopLedSweep(){clearInterval(ledTimer);document.querySelectorAll('.led').forEach(d=>d.classList.remove('on'))}
+function setMessage(main,sub,type){message.className='message'+(type?' '+type:'');message.innerHTML=`<div><strong>${main}</strong><small>${sub}</small></div>`}
+function pulseFlash(type){flash.className='flash';void flash.offsetWidth;if(type)flash.classList.add(type)}
+function coinPulseTop(){const c=document.querySelector('.coinMini');c.animate([{transform:'scale(1)'},{transform:'scale(1.28) rotate(-8deg)'},{transform:'scale(1)'}],{duration:360,easing:'cubic-bezier(.2,1.5,.35,1)'})}
+
+function renderAll(){renderWallet();renderWeek();renderAccess();}
+function renderWallet(){medalCount.textContent=wallet;}
+function renderWeek(){
+  const keys=weekKeys(), names=['月','火','水','木','金','土','日'], today=currentDateKey();weekDays.innerHTML='';
+  keys.forEach((k,i)=>{const d=document.createElement('div');d.className='dayCell'+(adherence.doneDates[k]?' done':'')+(k===today?' today':'');d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;weekDays.appendChild(d)});
+  const count=keys.filter(k=>adherence.doneDates[k]).length;
+  if(isUnlocked()){accessBadge.textContent='OPEN';accessBadge.classList.add('open');weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b>　${wallet}枚のメダルを使えます。<small>勝って増えたメダルも、今日ならそのまま使えます。</small>`;}
+  else{accessBadge.textContent='LOCKED';accessBadge.classList.remove('open');if(isSunday())weekStatus.innerHTML=`🔒 今週は ${count}/7日。7日そろうと今日のゲームが解放されます。<small>貯めたメダルは消えません。次の解放日までロックされます。</small>`;else weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは日曜日だけ使えます。<small>毎日の服薬で1枚ずつ貯まり、1週間つづけられた日曜日に解放されます。</small>`;}
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認';
+}
+function renderAccess(){
+  const playable=isUnlocked()&&wallet>0&&(state==='idle'||state==='over');playBtn.disabled=!playable;
+  if(state==='ready'||state==='reveal'||state==='draw'||state==='win'||state==='lose'){playBtn.disabled=true;return;}
+  if(!isSunday())playBtn.innerHTML='🔒 日曜日に解放';
+  else if(!weekComplete())playBtn.innerHTML='🔒 今週7日達成で解放';
+  else if(wallet<1)playBtn.innerHTML='メダルがありません';
+  else playBtn.innerHTML='メダルをつかって あそぶ <span class="cost">-1</span>';
+}
+function isUnlocked(){return isSunday()&&weekComplete();}
+function isSunday(){return dayOfWeek(currentDateKey())===0;}
+function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k]);}
+function weekKeys(){const start=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(start,i));}
+function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real;}
+function todayJstKey(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`;}
+function weekStartKey(key){const d=parseKey(key),day=d.getUTCDay(),offset=(day+6)%7;d.setUTCDate(d.getUTCDate()-offset);return keyFromDate(d);}
+function addDaysKey(key,n){const d=parseKey(key);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d);}
+function dayOfWeek(key){return parseKey(key).getUTCDay();}
+function parseKey(key){return new Date(key+'T00:00:00Z');}
+function keyFromDate(d){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;}
+
+function renderSettings(){soundBtn.setAttribute('aria-pressed',String(settings.sound));vibeBtn.setAttribute('aria-pressed',String(settings.vibe))}
+function saveWallet(){localStorage.setItem(STORE,String(wallet))}
+function saveSettings(){localStorage.setItem(SETTINGS,JSON.stringify(settings))}
+function saveAdherence(){localStorage.setItem(ADHERENCE,JSON.stringify(adherence))}
+function loadWallet(){const own=parseInt(localStorage.getItem(STORE),10);if(Number.isFinite(own))return own;const legacy=parseInt(localStorage.getItem(LEGACY_STORE),10);const v=Number.isFinite(legacy)?legacy:0;localStorage.setItem(STORE,String(v));return v;}
+function loadJson(k,f){try{return {...f,...JSON.parse(localStorage.getItem(k)||'{}')}}catch(_){return f}}
+function tone(freq,dur=.08,vol=.02,type='square'){if(!settings.sound)return;try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(vol,audio.currentTime+.008);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dur);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+dur+.02)}catch(_){}}
+function vibrate(p){if(settings.vibe&&navigator.vibrate)navigator.vibrate(p)}
+})();
+</script>
+</body>
+</html>

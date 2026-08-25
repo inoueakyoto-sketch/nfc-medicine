@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#234750">
+<title>縁日スマートボール v0.4.2</title>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');</script>
+<style>
+:root{
+  --cream:#f6ecd7;--ink:#263439;--gold:#d6a648;--gold2:#f0d27d;--red:#c95349;
+  --green:#4d8c70;--shadow:0 24px 58px rgba(0,0,0,.29)
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:#102b32;font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif}
+body{display:flex;justify-content:center;min-height:100dvh;overflow-x:hidden}
+button{font:inherit}
+#app{
+  position:relative;width:min(100vw,480px);min-height:100dvh;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% -5%,rgba(255,244,190,.12),transparent 34%),
+             linear-gradient(180deg,#2b5865,#1c424c 44%,#11313a);
+  overflow:hidden;color:#f9f2df
+}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.title{font-weight:900;letter-spacing:.08em;font-size:13px}
+.subtitle{display:block;font-size:10px;opacity:.62;margin-top:2px}
+.wallet{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 7px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(0,0,0,.16)}
+.coinMini{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff0b6 0 10%,var(--gold2) 11% 44%,var(--gold) 45% 73%,#9d6b20 74% 100%);border:2px solid #f6dc8b;color:#855b1b;font-size:11px;font-weight:1000}
+.wallet b{font-size:18px;min-width:22px;text-align:center}.wallet span{font-size:11px;opacity:.7}
+.weekCard{margin-bottom:12px;padding:11px 12px;border:1px solid rgba(255,255,255,.13);border-radius:22px;background:rgba(4,20,28,.26)}
+.weekHead{display:flex;justify-content:space-between;gap:10px}.weekHead strong{font-size:13px}.weekHead small{display:block;font-size:9px;opacity:.58;margin-top:2px}
+.badge{align-self:flex-start;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.2);font-size:9px;font-weight:900}.badge.open{background:rgba(79,145,116,.34);color:#ddf6e6}
+.weekDays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:9px}
+.dayCell{text-align:center;font-size:9px;font-weight:900;opacity:.67}.dayDot{width:28px;height:28px;margin:4px auto 0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3)}
+.dayCell.done{opacity:1}.dayCell.done .dayDot{background:radial-gradient(circle at 35% 30%,#ffeaa2 0 9%,#ddb04f 10% 52%,#a47023 53% 100%);color:#745018;border-color:#ecd07c}
+.weekStatus{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;font-weight:800;line-height:1.5}
+.machine{position:relative;background:linear-gradient(155deg,#fbf0dc,#e6d0aa);border-radius:31px;padding:16px 14px 17px;box-shadow:var(--shadow),inset 0 2px rgba(255,255,255,.85),inset 0 -4px rgba(117,78,34,.08);color:var(--ink);overflow:hidden}
+.machine:before{content:"";position:absolute;left:14px;right:14px;top:11px;height:8px;border-radius:99px;background:repeating-linear-gradient(90deg,#c94f46 0 26px,#f2dcaa 26px 52px);opacity:.9}
+.marquee{text-align:center;margin:8px 0 7px}.marquee strong{display:block;font-size:20px;letter-spacing:.08em}.marquee small{font-size:10px;color:#6c7778;font-weight:800}
+.slotArea{display:flex;justify-content:center;align-items:center;gap:9px;margin:3px auto 9px;font-size:10px;font-weight:900;color:#6b6963}
+.medalSlot{position:relative;width:78px;height:28px;border-radius:10px;background:linear-gradient(#9d8a70,#5b4c3a);box-shadow:inset 0 4px 8px rgba(0,0,0,.38),0 2px rgba(255,255,255,.55)}
+.medalSlot:before{content:"";position:absolute;left:13px;right:13px;top:10px;height:5px;border-radius:99px;background:#181512}
+.medalSlot.flash{animation:slotFlash .62s ease}@keyframes slotFlash{50%{box-shadow:0 0 0 5px rgba(255,213,106,.32),0 0 22px rgba(255,213,106,.62)}}
+.screenShell{position:relative;margin:0 auto;width:min(97%,400px);border-radius:28px;background:linear-gradient(145deg,#6c4929,#332117);box-shadow:inset 0 0 0 7px #c99f68,inset 0 0 0 9px #765229,0 10px 25px rgba(55,37,15,.2);padding:10px}
+.gameScreen{position:relative;height:min(66vh,590px);min-height:458px;border-radius:20px;overflow:hidden;background:#e7d2a5;border:2px solid rgba(255,255,255,.34);box-shadow:inset 0 0 24px rgba(76,47,19,.18)}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.hud{position:absolute;z-index:8;left:9px;right:9px;top:8px;display:flex;justify-content:space-between;gap:6px;pointer-events:none}
+.pill{padding:6px 8px;border-radius:99px;background:rgba(31,43,44,.80);color:#fff7df;font-size:9px;font-weight:1000;box-shadow:0 3px 8px rgba(0,0,0,.14)}
+.lineHint{position:absolute;z-index:9;left:50%;top:43px;transform:translateX(-50%);padding:5px 9px;border-radius:99px;background:rgba(255,249,229,.90);color:#69533a;font-size:9px;font-weight:1000;white-space:nowrap;pointer-events:none}
+.launchGuide{position:absolute;z-index:12;right:4px;bottom:10px;width:46px;height:144px;display:flex;align-items:center;justify-content:center;touch-action:none}
+.railControl{position:absolute;width:14px;top:3px;bottom:3px;border-radius:12px;background:linear-gradient(90deg,#6d5038,#b58a60,#6b4c34);box-shadow:inset 0 0 0 2px rgba(72,45,24,.34)}
+.knob{position:absolute;top:12px;width:41px;height:41px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#ffe19a 0 8%,#d6a84a 9% 48%,#9d6925 49% 100%);border:4px solid #f0ce76;box-shadow:0 6px 0 #704719,0 8px 12px rgba(0,0,0,.22);display:grid;place-items:center;color:#704719;font-size:8px;font-weight:1000;cursor:grab;touch-action:none;user-select:none}
+.knob.dragging{cursor:grabbing}
+.powerBar{position:absolute;right:49px;bottom:19px;width:7px;height:105px;border-radius:99px;background:rgba(71,52,33,.16);overflow:hidden;pointer-events:none}
+.powerBar i{position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(#cf5149,#e8b44c,#5f9b75);border-radius:99px}
+.guideText{position:absolute;z-index:14;right:52px;bottom:18px;padding:7px 9px;border-radius:12px;background:rgba(255,250,233,.93);border:1px solid rgba(91,68,40,.12);font-size:9px;font-weight:900;color:#554631;pointer-events:none;opacity:0;transform:translateY(6px);transition:.2s}
+.guideText.show{opacity:1;transform:none}
+.startOverlay{position:absolute;inset:0;z-index:25;display:grid;place-items:center;padding:22px;background:rgba(27,29,25,.45);backdrop-filter:blur(3px)}
+.startCard{width:min(94%,330px);padding:20px 18px;border-radius:24px;background:rgba(249,241,221,.98);color:#243139;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.25)}
+.startCard h2{margin:0 0 7px;font-size:21px}.startCard p{margin:0 0 11px;font-size:12px;line-height:1.65;color:#667174}
+.bingoDemo{display:grid;grid-template-columns:repeat(4,23px);gap:5px;justify-content:center;margin:10px auto 13px}
+.bingoDemo i{width:23px;height:23px;border-radius:50%;background:#cab894;box-shadow:inset 0 2px 4px rgba(73,48,24,.25)}
+.bingoDemo i.on{background:radial-gradient(circle at 34% 28%,#fff,#e2e2dc 42%,#92938f 100%);box-shadow:0 2px 4px rgba(0,0,0,.18)}
+.bigBtn{width:100%;border:0;border-radius:18px;padding:13px 15px;background:linear-gradient(#df6b60,#b84943);box-shadow:0 5px 0 #7d302b;color:white;font-weight:1000;cursor:pointer}.bigBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #7d302b}
+.message{text-align:center;min-height:53px;display:grid;place-items:center;margin:9px 0 7px}.message strong{display:block;font-size:19px}.message small{display:block;font-size:10px;margin-top:2px;color:#707875;font-weight:800}
+.playBtn{width:100%;border:0;border-radius:19px;padding:14px 15px;background:linear-gradient(#d76157,#b74640);box-shadow:0 6px 0 #7e2f2b;color:#fff;font-weight:1000;cursor:pointer}.playBtn:disabled{opacity:.5}.playBtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #7e2f2b}
+.rules{display:flex;justify-content:center;flex-wrap:wrap;gap:11px;margin-top:9px;color:#67716e;font-size:9px;font-weight:900}
+.bingoFlash{position:absolute;z-index:30;left:50%;top:51%;transform:translate(-50%,-50%);font-size:38px;font-weight:1000;color:#fff0a8;text-shadow:0 4px 16px rgba(75,43,7,.48);opacity:0;pointer-events:none}
+.bingoFlash.go{animation:bingoPop 1.05s cubic-bezier(.18,1.45,.34,1)}@keyframes bingoPop{0%{opacity:0;transform:translate(-50%,-40%) scale(.45) rotate(-6deg)}30%{opacity:1;transform:translate(-50%,-52%) scale(1.18) rotate(2deg)}75%{opacity:1;transform:translate(-50%,-55%) scale(1)}100%{opacity:0;transform:translate(-50%,-85%) scale(.9)}}
+.coinFly{position:fixed;z-index:1000;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;pointer-events:none;opacity:0}
+.coinReward{position:absolute;left:50%;top:55%;z-index:50;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;opacity:0;transform:translate(-50%,-50%) scale(.4)}
+.coinReward.go{animation:reward 1.05s cubic-bezier(.17,.78,.25,1) forwards}@keyframes reward{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}22%{opacity:1;transform:translate(-50%,-65%) scale(1.16)}70%{opacity:1;transform:translate(-50%,-94%) scale(1)}100%{opacity:0;transform:translate(-50%,-128%) scale(.78)}}
+.utility{margin-top:11px;display:flex;justify-content:space-between;gap:8px}.toggles{display:flex;gap:7px}.iconBtn,.testBtn{border:1px solid rgba(255,255,255,.13);border-radius:13px;background:rgba(0,0,0,.13);color:#f1ecdf}.iconBtn{width:39px;height:39px;font-size:17px}.iconBtn[aria-pressed="false"]{opacity:.4}.testBtn{padding:9px 10px;font-size:9px;font-weight:900}
+.noteText{text-align:center;font-size:9px;opacity:.54;line-height:1.5;margin-top:8px}
+@media(max-width:360px){.gameScreen{min-height:430px}.launchGuide{height:128px}.powerBar{height:91px}.guideText{font-size:8px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+<style id="arcade-embed-style">
+html.embed,html.embed body{background:#173740!important;min-height:100%!important}
+html.embed body{display:block!important;overflow:auto!important}
+html.embed #app{width:100%!important;min-height:100vh!important;padding:8px!important;background:transparent!important}
+html.embed .topbar,
+html.embed .weekCard,
+html.embed .utility,
+html.embed .note,
+html.embed .noteText,
+html.embed .devTools,
+html.embed details.devTools,
+html.embed .demoGuide,
+html.embed .startOverlay{display:none!important}
+html.embed .machine{margin:0 auto!important;max-width:470px!important;box-shadow:none!important}
+html.embed .screenShell{max-width:100%!important}
+html.embed .gameScreen{max-height:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="title">MEDAL ARCADE<span class="subtitle">SUNDAY GAME DAY</span></div>
+  <div class="wallet" id="wallet"><div class="coinMini">M</div><b id="medalCount">0</b><span>まい</span></div>
+</header>
+
+<section class="weekCard">
+  <div class="weekHead"><div><strong>こんしゅうの おくすり</strong><small>7日つづけると、日曜日だけゲーム解放</small></div><span class="badge" id="badge">LOCKED</span></div>
+  <div class="weekDays" id="weekDays"></div><div class="weekStatus" id="weekStatus"></div>
+</section>
+
+<main class="machine">
+  <div class="marquee"><strong>縁日スマートボール</strong><small>4 × 4 BINGO / 13 BALLS</small></div>
+  <div class="slotArea"><span>MEDAL SLOT</span><div class="medalSlot" id="medalSlot"></div></div>
+
+  <section class="screenShell">
+    <div class="gameScreen">
+      <canvas id="canvas" width="360" height="590"></canvas>
+      <div class="hud"><div class="pill">BINGO <span id="lineCount">0</span></div><div class="pill">BALL <span id="balls">13</span></div></div>
+      <div class="lineHint">たて・よこ・ななめ　4つでBINGO</div>
+      <div class="powerBar"><i id="powerFill"></i></div>
+      <div class="launchGuide"><div class="railControl"></div><div class="knob" id="knob">PULL</div></div>
+      <div class="guideText" id="guideText">下へ引いて<br>はなす！</div>
+      <div class="bingoFlash" id="bingoFlash">BINGO!</div>
+
+      <div class="startOverlay" id="startOverlay">
+        <div class="startCard">
+          <h2>縁日のスマートボール</h2>
+          <p>13球を打って、4×4の穴に玉を残します。縦・横・斜めに4つ並べば勝ち。</p>
+          <div class="bingoDemo">
+            <i class="on"></i><i></i><i></i><i></i>
+            <i></i><i class="on"></i><i></i><i></i>
+            <i></i><i></i><i class="on"></i><i></i>
+            <i></i><i></i><i></i><i class="on"></i>
+          </div>
+          <button class="bigBtn" id="trialBtn">▶ 試しにあそぶ</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="message" id="message"><div><strong>メダルを入れてスタート</strong><small>4つ並べたらメダル1枚GET</small></div></div>
+  <button class="playBtn" id="playBtn">🪙 メダルを入れてスタート</button>
+  <div class="rules"><span>13球</span><span>4×4の16穴</span><span>人工的な軌道補正なし</span></div>
+  <div class="coinReward" id="coinReward">+1</div>
+</main>
+
+<div class="utility">
+  <div class="toggles"><button class="iconBtn" id="soundBtn" aria-pressed="true">♪</button><button class="iconBtn" id="vibeBtn" aria-pressed="true">⌁</button></div>
+  <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
+</div>
+<div class="utility"><button class="testBtn" id="testWeekBtn">試作：今週7日達成</button><button class="testBtn" id="testSundayBtn">試作：日曜として確認</button></div>
+<p class="noteText">盤面幅500mm級・白球約25mm級の実機比率を参考に縮尺化。v0.4.1では右上の発射カーブを連続した二重レールへ修正。</p>
+<div class="coinFly" id="coinFly">M</div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+const STORE='medicine-medal-arcade-wallet-v2';
+const SETTINGS='medicine-medal-arcade-settings-v1';
+const ADHERENCE='medicine-medal-weekly-adherence-v1';
+const DEBUG='medicine-medal-arcade-debug-v1';
+const TZ='Asia/Tokyo';
+
+const $=id=>document.getElementById(id);
+const canvas=$('canvas'),ctx=canvas.getContext('2d');
+const ballsEl=$('balls'),lineCountEl=$('lineCount'),message=$('message'),playBtn=$('playBtn'),trialBtn=$('trialBtn'),startOverlay=$('startOverlay');
+const knob=$('knob'),powerFill=$('powerFill'),guideText=$('guideText'),bingoFlash=$('bingoFlash');
+const medalCount=$('medalCount'),walletEl=$('wallet'),weekDays=$('weekDays'),weekStatus=$('weekStatus'),badge=$('badge');
+const soundBtn=$('soundBtn'),vibeBtn=$('vibeBtn'),testMedalBtn=$('testMedalBtn'),testWeekBtn=$('testWeekBtn'),testSundayBtn=$('testSundayBtn');
+const coinFly=$('coinFly'),medalSlot=$('medalSlot'),coinReward=$('coinReward');
+
+let wallet=loadInt(STORE,0);
+let settings=loadJson(SETTINGS,{sound:true,vibe:true});
+let adherence=loadJson(ADHERENCE,{doneDates:{}});
+let debug=loadJson(DEBUG,{sunday:false});
+if(!adherence.doneDates)adherence.doneDates={};
+
+/* =========================================================
+   PHYSICAL MODEL
+   ---------------------------------------------------------
+   Reference scale:
+   - playfield width ~ 500 mm -> 360 px
+   - glass ball diameter ~ 25 mm -> 18 px
+   - board tilt 11 degrees (calibrated, not claimed universal)
+   - rolling solid sphere acceleration = 5/7 g sin(theta)
+   - fixed time step = 1/240 s
+   ========================================================= */
+const PX_PER_M = 720;               // 360px / 0.50m
+const G = 9.80665;                 // m/s^2
+const TILT = 11*Math.PI/180;
+const ROLL_ACCEL = (5/7)*G*Math.sin(TILT)*PX_PER_M; // px/s^2 down-board
+const ROLL_RESIST = 0.010*G*Math.cos(TILT)*PX_PER_M; // Coulomb rolling resistance
+const BALL_R = 9;                  // ~12.5mm physical radius
+const BALL_M = 0.020;              // ~20g glass sphere
+const SPRING_K = 28;               // N/m effective plunger spring
+const FIXED_DT = 1/240;
+const MAX_STEPS = 18;
+
+const E_NAIL = 0.70;
+const E_WOOD = 0.48;
+const E_METAL_RAIL = 0.62;
+const MU_TANGENT = 0.075;
+
+const START_BALLS=13;
+const W=360,H=590;
+const PLAY_LEFT=17, PLAY_RIGHT=318;
+const LANE_INNER_X=318, LANE_OUTER_X=347;
+const CURVE_CX=300, CURVE_CY=92, CURVE_INNER_R=18, CURVE_OUTER_R=47;
+const DRAIN_Y=566;
+
+let state='idle',audio=null,ballsLeft=START_BALLS;
+let active=null,accumulator=0,lastFrame=performance.now(),raf=0;
+let dragging=false,dragStartY=0,pullPx=25,power01=.28;
+let won=false,lines=0,shotNumber=0;
+
+/* 4x4 authentic-style hole field */
+const holeXs=[65,128,191,254];
+const holeYs=[196,286,376,466];
+const holes=[];
+for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+  holes.push({r,c,x:holeXs[c],y:holeYs[r],rHole:11.5,occupied:false,winning:false});
+}
+
+/* 
+  Nail layout:
+  intentionally not a regular matrix.
+  Zones are derived from real boards:
+  - upper dispersal field
+  - side deflectors
+  - asymmetric pairs around hole entrances
+  - open corridors so balls can pass laterally
+*/
+const nails=[
+  // upper dispersal / entry
+  [42,104,3.2],[88,91,3.2],[133,112,3.2],[178,88,3.2],[221,107,3.2],[267,83,3.2],[294,125,3.2],
+  [61,143,3.2],[112,132,3.2],[158,151,3.2],[207,136,3.2],[251,153,3.2],[282,164,3.2],
+
+  // row 1 approach - deliberately offset from hole centers
+  [32,176,3.2],[94,171,3.2],[145,181,3.2],[214,169,3.2],[276,180,3.2],
+  [48,225,3.2],[107,217,3.2],[164,232,3.2],[225,215,3.2],[286,229,3.2],
+
+  // row 2 approach
+  [27,257,3.2],[80,254,3.2],[151,263,3.2],[207,248,3.2],[270,259,3.2],[297,273,3.2],
+  [46,316,3.2],[101,306,3.2],[166,320,3.2],[231,307,3.2],[282,323,3.2],
+
+  // row 3 approach
+  [30,347,3.2],[84,342,3.2],[143,354,3.2],[211,340,3.2],[273,351,3.2],[299,365,3.2],
+  [49,408,3.2],[110,397,3.2],[158,417,3.2],[226,401,3.2],[286,415,3.2],
+
+  // lower field / last chance deflection
+  [31,438,3.2],[92,446,3.2],[148,439,3.2],[210,450,3.2],[275,441,3.2],
+  [43,502,3.2],[117,513,3.2],[177,500,3.2],[239,516,3.2],[291,497,3.2]
+].map(([x,y,r])=>({x,y,r}));
+
+/* stationary posts/bumper-like nail caps seen on festival boards */
+const posts=[
+  {x:53,y:548,r:6,e:.46},{x:175,y:536,r:7,e:.50},{x:280,y:547,r:6,e:.46}
+];
+
+/* solid rail segments */
+const rails=[
+  // left frame
+  seg(PLAY_LEFT,74,PLAY_LEFT,532,E_WOOD),
+
+  // The inner launch rail is also the physical right boundary of the playfield.
+  // Using one continuous rail avoids the narrow overlapping-wall pocket that
+  // could trap the ball in the old upper-right transition.
+  seg(LANE_INNER_X,CURVE_CY,LANE_INNER_X,548,E_METAL_RAIL),
+
+  // angled side guides, intentionally asymmetric
+  seg(PLAY_LEFT,150,39,164,E_WOOD),
+  seg(PLAY_LEFT,320,42,341,E_WOOD),
+  seg(PLAY_RIGHT,207,294,220,E_WOOD),
+  seg(PLAY_RIGHT,378,292,399,E_WOOD),
+
+  // bottom return gutters
+  seg(PLAY_LEFT,530,109,568,E_WOOD),
+  seg(PLAY_RIGHT,530,229,568,E_WOOD),
+
+  // outer launch-lane wall
+  seg(LANE_OUTER_X,CURVE_CY,LANE_OUTER_X,548,E_WOOD),
+
+  // Smooth 90-degree launch bend. Two concentric rails form a real channel:
+  // vertical upward motion becomes leftward motion only through collisions
+  // with the curved rails. No scripted direction change is used.
+  ...arcSegments(CURVE_CX,CURVE_CY,CURVE_OUTER_R,0,-Math.PI/2,20,E_WOOD),
+  ...arcSegments(CURVE_CX,CURVE_CY,CURVE_INNER_R,0,-Math.PI/2,12,E_METAL_RAIL)
+];
+
+/*
+  Side deflectors.
+  v0.4.2: every side guide is either joined to the side wall or leaves a
+  gap wider than one ball diameter, and its downhill direction points back
+  into the playfield. This removes concave pockets where a ball could come
+  to a mechanically stable rest between a wall and a short rail.
+*/
+rails.push(
+  // upper left: continuous from wall, downhill toward centre
+  seg(PLAY_LEFT,105,60,126,E_WOOD),
+  // upper right: continuous from wall, downhill toward centre
+  seg(PLAY_RIGHT,108,270,132,E_WOOD),
+
+  // middle pair
+  seg(PLAY_LEFT,263,50,284,E_WOOD),
+  seg(PLAY_RIGHT,278,280,302,E_WOOD),
+
+  // lower pair
+  seg(PLAY_LEFT,438,54,460,E_WOOD),
+  seg(PLAY_RIGHT,452,270,480,E_WOOD)
+);
+
+renderAll();renderSettings();draw();
+
+trialBtn.onclick=enableTrial;
+playBtn.onclick=insertMedalAndStart;
+soundBtn.onclick=()=>{settings.sound=!settings.sound;save(SETTINGS,settings);renderSettings();if(settings.sound)tone(620,.05,.02)};
+vibeBtn.onclick=()=>{settings.vibe=!settings.vibe;save(SETTINGS,settings);renderSettings();vibrate(8)};
+testMedalBtn.onclick=markMedicationDone;
+testWeekBtn.onclick=()=>{weekKeys().forEach(k=>adherence.doneDates[k]=true);save(ADHERENCE,adherence);renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.07,.02),70)};
+testSundayBtn.onclick=()=>{debug.sunday=!debug.sunday;save(DEBUG,debug);renderAll()};
+
+knob.addEventListener('pointerdown',e=>{
+  if(state!=='ready'||active||ballsLeft<=0)return;
+  e.preventDefault();dragging=true;dragStartY=e.clientY;pullPx=0;knob.setPointerCapture(e.pointerId);knob.classList.add('dragging');guideText.classList.remove('show')
+});
+knob.addEventListener('pointermove',e=>{
+  if(!dragging)return;e.preventDefault();
+  pullPx=Math.max(0,Math.min(82,e.clientY-dragStartY));
+  knob.style.top=(12+pullPx)+'px';
+  power01=pullPx/82;
+  powerFill.style.height=Math.round(power01*100)+'%'
+});
+knob.addEventListener('pointerup',()=>{
+  if(!dragging)return;dragging=false;knob.classList.remove('dragging');
+  if(pullPx<10){resetKnob();guideText.classList.add('show');return}
+  launchBall(pullPx);resetKnob()
+});
+knob.addEventListener('pointercancel',()=>{dragging=false;knob.classList.remove('dragging');resetKnob()});
+
+function enableTrial(){
+  weekKeys().forEach(k=>adherence.doneDates[k]=true);save(ADHERENCE,adherence);
+  debug.sunday=true;save(DEBUG,debug);
+  if(wallet<3){wallet=3;localStorage.setItem(STORE,String(wallet))}
+  startOverlay.style.display='none';renderAll();setMsg('準備OK','メダルを入れてスタート')
+}
+
+function insertMedalAndStart(){
+  if(state!=='idle'&&state!=='over')return;
+  if(!isUnlocked()){setMsg('まだ遊べません','1週間つづけた日曜日に解放されます');return}
+  if(wallet<1){setMsg('メダルがありません','服薬できた日に1枚たまります');return}
+
+  state='inserting';playBtn.disabled=true;
+  const wr=walletEl.getBoundingClientRect(),sr=medalSlot.getBoundingClientRect();
+  coinFly.style.opacity=1;
+  coinFly.style.left=(wr.left+wr.width/2-25)+'px';
+  coinFly.style.top=(wr.top+wr.height/2-25)+'px';
+  const tx=(sr.left+sr.width/2)-(wr.left+wr.width/2);
+  const ty=(sr.top+sr.height/2)-(wr.top+wr.height/2);
+  const a=coinFly.animate([
+    {transform:'translate(0,0) scale(.9) rotate(0)'},
+    {transform:`translate(${tx*.55}px,${ty*.35}px) scale(1.08) rotate(240deg)`,offset:.55},
+    {transform:`translate(${tx}px,${ty}px) scale(.48) rotate(520deg)`,opacity:1}
+  ],{duration:780,easing:'cubic-bezier(.2,.72,.25,1)',fill:'forwards'});
+  tone(520,.045,.02);setTimeout(()=>tone(760,.05,.018),260);
+  a.onfinish=()=>{
+    coinFly.style.opacity=0;coinFly.getAnimations().forEach(x=>x.cancel());
+    wallet--;localStorage.setItem(STORE,String(wallet));renderWallet();
+    medalSlot.classList.remove('flash');void medalSlot.offsetWidth;medalSlot.classList.add('flash');
+    metalClink();vibrate([8,24,8]);setTimeout(startGame,320)
+  }
+}
+
+function startGame(){
+  holes.forEach(h=>{h.occupied=false;h.winning=false});
+  ballsLeft=START_BALLS;ballsEl.textContent=ballsLeft;
+  lineCountEl.textContent='0';lines=0;won=false;shotNumber=0;
+  active=null;state='ready';guideText.classList.add('show');
+  setMsg('発射しよう！','右のつまみを引く量で勢いが変わります');
+  renderAccess();
+  accumulator=0;lastFrame=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(frame)
+}
+
+function resetKnob(){
+  knob.style.top='12px';pullPx=0;power01=.28;powerFill.style.height='28%'
+}
+
+function launchBall(pull){
+  if(state!=='ready'||active||ballsLeft<=0)return;
+
+  /* Hooke's law energy: 1/2 k x^2 = 1/2 m v^2 */
+  const pullM = 0.018 + (pull/82)*0.050; // 18–68 mm physical plunger travel
+  let speedMS = Math.sqrt(SPRING_K/BALL_M)*pullM;
+  speedMS = Math.min(2.55, Math.max(.72, speedMS));
+  const speed = speedMS*PX_PER_M;
+
+  active={
+    x:(LANE_INNER_X+LANE_OUTER_X)/2,y:531,
+    vx:0,vy:-speed,
+    r:BALL_R,
+    born:performance.now(),
+    inLane:true,
+    sink:null
+  };
+
+  ballsLeft--;ballsEl.textContent=ballsLeft;shotNumber++;
+  tone(205,.055,.028,'triangle');setTimeout(()=>tone(410,.045,.018),55);vibrate(6);
+  setMsg('いけ！',`残り ${ballsLeft} 球`)
+}
+
+function frame(now){
+  let elapsed=Math.min(.075,(now-lastFrame)/1000);
+  lastFrame=now;accumulator+=elapsed;
+  let steps=0;
+  while(accumulator>=FIXED_DT && steps<MAX_STEPS){
+    physicsStep(FIXED_DT);
+    accumulator-=FIXED_DT;steps++
+  }
+  if(steps===MAX_STEPS)accumulator=0;
+  draw();
+  raf=requestAnimationFrame(frame)
+}
+
+function physicsStep(dt){
+  if(!active)return;
+
+  if(active.sink){
+    active.sink.t+=dt;
+    if(active.sink.t>=.20){
+      const h=active.sink.h;
+      active=null;
+      finishCaptured(h)
+    }
+    return
+  }
+
+  // rolling sphere acceleration down the inclined playfield
+  active.vy += ROLL_ACCEL*dt;
+
+  // rolling resistance opposes the current planar velocity
+  const speed=Math.hypot(active.vx,active.vy);
+  if(speed>1){
+    const dv=Math.min(speed,ROLL_RESIST*dt);
+    active.vx -= active.vx/speed*dv;
+    active.vy -= active.vy/speed*dv
+  }
+
+  active.x+=active.vx*dt;
+  active.y+=active.vy*dt;
+
+  // rigid rails
+  for(const s of rails)resolveCircleSegment(active,s);
+
+  // nails
+  for(const n of nails)resolveCircleCircleStatic(active,n,E_NAIL,.055);
+
+  // larger posts
+  for(const p of posts)resolveCircleCircleStatic(active,p,p.e,.09);
+
+  // holes: no attraction. The ball must physically pass over the aperture.
+  // A fast ball can bridge/skirt an opening; a centered/slow ball drops.
+  if(!active.inLane && active.vy>0){
+    for(const h of holes){
+      if(h.occupied)continue;
+      const d=Math.hypot(active.x-h.x,active.y-h.y);
+      const v=Math.hypot(active.vx,active.vy);
+      const centered=d<6.2;
+      const entered=d<8.5 && v<600;
+      if(centered||entered){
+        active.x=h.x;active.y=h.y;
+        active.vx=0;active.vy=0;
+        active.sink={h,t:0};
+        holeSound();vibrate(7);
+        return
+      }
+    }
+  }
+
+  // once the ball clears the inner launch rail at the top, it is in the field
+  if(active.inLane && active.x<CURVE_CX-8 && active.y<CURVE_CY-4)active.inLane=false;
+
+  // outer frame safety, physical wall
+  if(active.x<PLAY_LEFT+BALL_R){
+    active.x=PLAY_LEFT+BALL_R;
+    if(active.vx<0)active.vx=-active.vx*E_WOOD
+  }
+  if(!active.inLane && active.x>PLAY_RIGHT-BALL_R){
+    active.x=PLAY_RIGHT-BALL_R;
+    if(active.vx>0)active.vx=-active.vx*E_WOOD
+  }
+
+  // There is intentionally no scripted anti-stall nudge. A non-captured ball
+  // must keep moving only because of board gravity and contact geometry.
+
+  // failed ball reaches the physical trough
+  if(active.y>DRAIN_Y || performance.now()-active.born>14500){
+    active=null;
+    finishMiss()
+  }
+}
+
+function resolveCircleCircleStatic(b,o,e,mu){
+  const dx=b.x-o.x,dy=b.y-o.y;
+  const min=b.r+o.r;
+  const d2=dx*dx+dy*dy;
+  if(d2>=min*min||d2===0)return;
+  const d=Math.sqrt(d2),nx=dx/d,ny=dy/d;
+  const pen=min-d;
+  b.x+=nx*pen;b.y+=ny*pen;
+
+  const vn=b.vx*nx+b.vy*ny;
+  if(vn<0){
+    b.vx-=(1+e)*vn*nx;
+    b.vy-=(1+e)*vn*ny;
+
+    // Coulomb-like tangential collision friction
+    const tx=-ny,ty=nx;
+    const vt=b.vx*tx+b.vy*ty;
+    b.vx-=vt*mu*tx;
+    b.vy-=vt*mu*ty;
+    if(Math.abs(vn)>45)tink(.006+Math.min(.014,Math.abs(vn)/25000))
+  }
+}
+
+function resolveCircleSegment(b,s){
+  const vx=s.x2-s.x1,vy=s.y2-s.y1;
+  const wx=b.x-s.x1,wy=b.y-s.y1;
+  const vv=vx*vx+vy*vy;
+  const t=vv?Math.max(0,Math.min(1,(wx*vx+wy*vy)/vv)):0;
+  const cx=s.x1+t*vx,cy=s.y1+t*vy;
+  const dx=b.x-cx,dy=b.y-cy;
+  const d2=dx*dx+dy*dy;
+  if(d2>=b.r*b.r||d2===0)return;
+  const d=Math.sqrt(d2),nx=dx/d,ny=dy/d;
+  b.x+=nx*(b.r-d);b.y+=ny*(b.r-d);
+  const vn=b.vx*nx+b.vy*ny;
+  if(vn<0){
+    b.vx-=(1+s.e)*vn*nx;
+    b.vy-=(1+s.e)*vn*ny;
+    const tx=-ny,ty=nx,vt=b.vx*tx+b.vy*ty;
+    b.vx-=vt*MU_TANGENT*tx;
+    b.vy-=vt*MU_TANGENT*ty;
+    if(Math.abs(vn)>80)tink(.008)
+  }
+}
+
+function finishCaptured(h){
+  h.occupied=true;
+  const result=checkLines();
+  if(result.total>lines){
+    lines=result.total;lineCountEl.textContent=lines;
+    holes.forEach(x=>x.winning=false);
+    result.indices.forEach(i=>holes[i].winning=true);
+    flashBingo();
+    if(!won){
+      won=true;awardMedal();
+      setMsg('BINGO！','4つ並んだ！ メダル1枚GET')
+    }else setMsg('またBINGO！',`${lines}ライン完成`)
+  }else setMsg('入った！',ballsLeft>0?'次の球を発射しよう':'結果を確認');
+
+  if(ballsLeft<=0)setTimeout(endGame,420);
+  else{state='ready';setTimeout(()=>guideText.classList.add('show'),180)}
+}
+
+function finishMiss(){
+  if(ballsLeft<=0)setTimeout(endGame,330);
+  else{state='ready';setMsg('おしい！','次の球を発射しよう');setTimeout(()=>guideText.classList.add('show'),150)}
+}
+
+function checkLines(){
+  const groups=[];
+  for(let r=0;r<4;r++)groups.push([idx(r,0),idx(r,1),idx(r,2),idx(r,3)]);
+  for(let c=0;c<4;c++)groups.push([idx(0,c),idx(1,c),idx(2,c),idx(3,c)]);
+  groups.push([idx(0,0),idx(1,1),idx(2,2),idx(3,3)]);
+  groups.push([idx(0,3),idx(1,2),idx(2,1),idx(3,0)]);
+  const wonGroups=groups.filter(g=>g.every(i=>holes[i].occupied));
+  return {total:wonGroups.length,indices:[...new Set(wonGroups.flat())]}
+}
+function idx(r,c){return r*4+c}
+
+function endGame(){
+  active=null;state='over';guideText.classList.remove('show');
+  if(won)setMsg('クリア！',`${lines}ライン完成！`);
+  else setMsg('おしい！','次は4つ並べよう');
+  renderAccess()
+}
+
+function flashBingo(){
+  bingoFlash.classList.remove('go');void bingoFlash.offsetWidth;bingoFlash.classList.add('go');
+  tone(523,.07,.03);setTimeout(()=>tone(659,.08,.03),80);setTimeout(()=>tone(784,.13,.035),160);vibrate([10,30,15])
+}
+function awardMedal(){
+  setTimeout(()=>{
+    wallet++;localStorage.setItem(STORE,String(wallet));renderWallet();
+    coinReward.classList.remove('go');void coinReward.offsetWidth;coinReward.classList.add('go')
+  },260)
+}
+
+/* -------------------- drawing -------------------- */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#f5e9c8');bg.addColorStop(1,'#d9be86');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // subtle festival board graphics
+  ctx.fillStyle='rgba(182,72,56,.075)';ctx.fillRect(18,60,289,28);
+  ctx.fillStyle='rgba(63,121,94,.065)';ctx.fillRect(18,525,289,28);
+
+  // bingo connection lines behind holes
+  ctx.save();ctx.strokeStyle='rgba(66,121,137,.46)';ctx.lineWidth=2.2;
+  for(let r=0;r<4;r++)line(holeXs[0],holeYs[r],holeXs[3],holeYs[r]);
+  for(let c=0;c<4;c++)line(holeXs[c],holeYs[0],holeXs[c],holeYs[3]);
+  ctx.strokeStyle='rgba(190,77,62,.42)';
+  line(holeXs[0],holeYs[0],holeXs[3],holeYs[3]);
+  line(holeXs[3],holeYs[0],holeXs[0],holeYs[3]);
+  ctx.restore();
+
+  // solid rails
+  for(const s of rails)drawRail(s);
+
+  // holes first, nails around them
+  for(const h of holes)drawHole(h);
+  for(const n of nails)drawNail(n);
+  for(const p of posts)drawPost(p);
+
+  // bottom collection trough
+  ctx.fillStyle='#89633c';
+  ctx.beginPath();ctx.moveTo(17,532);ctx.lineTo(108,575);ctx.lineTo(17,575);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(307,532);ctx.lineTo(230,575);ctx.lineTo(307,575);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(64,44,26,.70)';ctx.font='900 11px system-ui';ctx.textAlign='center';
+  ctx.fillText('はずれ球',170,573);
+
+  // launch ball ready position
+  if(active){
+    if(active.sink){
+      const k=Math.min(1,active.sink.t/.20);
+      drawBall(active.x,active.y,BALL_R*(1-.38*k),1-.28*k)
+    }else drawBall(active.x,active.y,BALL_R,1)
+  }else if(state==='ready')drawBall((LANE_INNER_X+LANE_OUTER_X)/2,531,BALL_R,1);
+
+  // transparent acrylic sheen
+  const sheen=ctx.createLinearGradient(0,0,W,H);
+  sheen.addColorStop(0,'rgba(255,255,255,.11)');
+  sheen.addColorStop(.28,'rgba(255,255,255,.015)');
+  sheen.addColorStop(1,'rgba(255,255,255,.035)');
+  ctx.fillStyle=sheen;ctx.fillRect(0,0,W,H)
+}
+
+function drawRail(s){
+  ctx.strokeStyle='rgba(72,45,24,.23)';ctx.lineWidth=7;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(s.x1+1,s.y1+2);ctx.lineTo(s.x2+1,s.y2+2);ctx.stroke();
+  ctx.strokeStyle='#9c754b';ctx.lineWidth=4.5;
+  ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke()
+}
+function drawNail(n){
+  ctx.beginPath();ctx.arc(n.x+1,n.y+1.5,n.r+1.3,0,Math.PI*2);ctx.fillStyle='rgba(55,35,18,.18)';ctx.fill();
+  const g=ctx.createRadialGradient(n.x-1,n.y-1,.2,n.x,n.y,n.r+1);
+  g.addColorStop(0,'#fbecd1');g.addColorStop(.35,'#c8a675');g.addColorStop(1,'#745232');
+  ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill()
+}
+function drawPost(p){
+  ctx.beginPath();ctx.arc(p.x,p.y,p.r+2,0,Math.PI*2);ctx.fillStyle='rgba(70,43,20,.20)';ctx.fill();
+  ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='#b65349';ctx.fill();
+  ctx.beginPath();ctx.arc(p.x-2,p.y-2,p.r-2.5,0,Math.PI*2);ctx.fillStyle='#e9b369';ctx.fill()
+}
+function drawHole(h){
+  ctx.beginPath();ctx.arc(h.x+1,h.y+2,15,0,Math.PI*2);ctx.fillStyle='rgba(71,46,25,.26)';ctx.fill();
+  ctx.beginPath();ctx.arc(h.x,h.y,13.2,0,Math.PI*2);ctx.fillStyle=h.winning?'#d8aa45':'#5b432c';ctx.fill();
+  ctx.beginPath();ctx.arc(h.x,h.y,10.2,0,Math.PI*2);ctx.fillStyle='#151713';ctx.fill();
+  if(h.occupied){
+    drawBall(h.x,h.y,8.7,1);
+    if(h.winning){
+      ctx.beginPath();ctx.arc(h.x,h.y,15.7,0,Math.PI*2);ctx.strokeStyle='#ffe27b';ctx.lineWidth=3;ctx.stroke()
+    }
+  }
+}
+function drawBall(x,y,r,alpha){
+  ctx.save();ctx.globalAlpha=alpha;
+  const g=ctx.createRadialGradient(x-r*.35,y-r*.35,1,x,y,r+2);
+  g.addColorStop(0,'#fff');g.addColorStop(.35,'#eeeae0');g.addColorStop(.70,'#c6c4bb');g.addColorStop(1,'#878a87');
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='rgba(92,95,93,.82)';ctx.lineWidth=.8;ctx.stroke();ctx.restore()
+}
+function line(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+
+/* -------------------- geometry helpers -------------------- */
+function seg(x1,y1,x2,y2,e){return{x1,y1,x2,y2,e}}
+function arcSegments(cx,cy,r,a0,a1,n,e){
+  const arr=[];
+  let px=cx+Math.cos(a0)*r,py=cy+Math.sin(a0)*r;
+  for(let i=1;i<=n;i++){
+    const a=a0+(a1-a0)*i/n;
+    const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
+    arr.push(seg(px,py,x,y,e));px=x;py=y
+  }
+  return arr
+}
+
+/* -------------------- app shell -------------------- */
+function setMsg(a,b){message.innerHTML=`<div><strong>${a}</strong><small>${b}</small></div>`}
+function markMedicationDone(){
+  const k=currentDateKey();
+  if(adherence.doneDates[k]){setMsg('今日は記録ずみ','メダルは受け取りずみ');return}
+  adherence.doneDates[k]=true;wallet++;
+  localStorage.setItem(STORE,String(wallet));save(ADHERENCE,adherence);
+  renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(8)
+}
+function renderAll(){renderWallet();renderWeek();renderAccess()}
+function renderWallet(){medalCount.textContent=wallet}
+function renderWeek(){
+  const keys=weekKeys(),names=['月','火','水','木','金','土','日'];weekDays.innerHTML='';
+  keys.forEach((k,i)=>{
+    const d=document.createElement('div');
+    d.className='dayCell'+(adherence.doneDates[k]?' done':'');
+    d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;
+    weekDays.appendChild(d)
+  });
+  const count=keys.filter(k=>adherence.doneDates[k]).length;
+  if(isUnlocked()){
+    badge.textContent='OPEN';badge.classList.add('open');
+    weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b> ${wallet}枚使えます。`
+  }else{
+    badge.textContent='LOCKED';badge.classList.remove('open');
+    weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは7日つづけた日曜日に使えます。`
+  }
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認'
+}
+function renderAccess(){
+  const ok=isUnlocked()&&wallet>0&&(state==='idle'||state==='over');
+  playBtn.disabled=!ok;
+  if(state==='ready'||state==='inserting'){playBtn.disabled=true;return}
+  if(!isSunday())playBtn.textContent='🔒 日曜日に解放';
+  else if(!weekComplete())playBtn.textContent='🔒 今週7日達成で解放';
+  else if(wallet<1)playBtn.textContent='メダルがありません';
+  else playBtn.textContent='🪙 メダルを入れてスタート'
+}
+function renderSettings(){soundBtn.setAttribute('aria-pressed',String(settings.sound));vibeBtn.setAttribute('aria-pressed',String(settings.vibe))}
+function isUnlocked(){return isSunday()&&weekComplete()}
+function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k])}
+function isSunday(){return dayOfWeek(currentDateKey())===0}
+function weekKeys(){const s=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(s,i))}
+function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real}
+function todayJstKey(){
+  const ps=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const p=Object.fromEntries(ps.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  return `${p.year}-${p.month}-${p.day}`
+}
+function weekStartKey(k){const d=parseKey(k),off=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-off);return keyFromDate(d)}
+function addDaysKey(k,n){const d=parseKey(k);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d)}
+function dayOfWeek(k){return parseKey(k).getUTCDay()}
+function parseKey(k){return new Date(k+'T00:00:00Z')}
+function keyFromDate(d){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`}
+function loadInt(k,f){const n=parseInt(localStorage.getItem(k),10);return Number.isFinite(n)?n:f}
+function loadJson(k,f){try{return {...f,...JSON.parse(localStorage.getItem(k)||'{}')}}catch(_){return f}}
+function save(k,v){localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v))}
+function getAudio(){audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
+function tone(freq,dur=.07,vol=.02,type='square'){
+  if(!settings.sound)return;
+  try{
+    const a=getAudio(),o=a.createOscillator(),g=a.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol,a.currentTime+.006);
+    g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);
+    o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+.02)
+  }catch(_){}
+}
+function tink(v=.008){tone(820+Math.random()*120,.025,v,'triangle')}
+function holeSound(){tone(315,.045,.025,'triangle');setTimeout(()=>tone(218,.065,.018,'sine'),32)}
+function metalClink(){tone(1450,.035,.025,'square');setTimeout(()=>tone(860,.07,.018,'triangle'),30)}
+function vibrate(p){if(settings.vibe&&navigator.vibrate)navigator.vibrate(p)}
+})();
+</script>
+</body>
+</html>

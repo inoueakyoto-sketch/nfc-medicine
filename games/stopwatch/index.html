@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#183944">
+<title>ぴったりストップ アーケード v0.1</title>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');</script>
+<style>
+:root{
+  --gold:#d6a744;--gold2:#f0d17b;--red:#c9544b;--green:#4c8c70;--blue:#528da3;--ink:#26353a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:#102b33;font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif}
+body{display:flex;justify-content:center;min-height:100dvh;overflow-x:hidden}
+button{font:inherit}
+#app{
+  width:min(100vw,480px);min-height:100dvh;position:relative;overflow:hidden;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% -5%,rgba(255,244,190,.12),transparent 34%),linear-gradient(180deg,#275364,#1b404c 45%,#113039);
+  color:#f7efdd
+}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.title{font-size:13px;font-weight:1000;letter-spacing:.08em}.subtitle{display:block;font-size:10px;opacity:.62;margin-top:2px}
+.wallet{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 7px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(0,0,0,.16)}
+.coinMini{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff0b6 0 10%,var(--gold2) 11% 44%,var(--gold) 45% 73%,#9d6b20 74% 100%);border:2px solid #f6dc8b;color:#855b1b;font-size:11px;font-weight:1000}
+.wallet b{font-size:18px;min-width:22px;text-align:center}.wallet span{font-size:11px;opacity:.7}
+.weekCard{margin-bottom:12px;padding:11px 12px;border:1px solid rgba(255,255,255,.13);border-radius:22px;background:rgba(4,20,28,.26)}
+.weekHead{display:flex;justify-content:space-between;gap:10px}.weekHead strong{font-size:13px}.weekHead small{display:block;font-size:9px;opacity:.58;margin-top:2px}
+.badge{align-self:flex-start;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.2);font-size:9px;font-weight:900}.badge.open{background:rgba(79,145,116,.34);color:#ddf6e6}
+.weekDays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:9px}.dayCell{text-align:center;font-size:9px;font-weight:900;opacity:.67}
+.dayDot{width:28px;height:28px;margin:4px auto 0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3)}
+.dayCell.done{opacity:1}.dayCell.done .dayDot{background:radial-gradient(circle at 35% 30%,#ffeaa2 0 9%,#ddb04f 10% 52%,#a47023 53% 100%);color:#745018;border-color:#ecd07c}
+.weekStatus{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;font-weight:800;line-height:1.5}
+.machine{position:relative;background:linear-gradient(155deg,#fbf0dc,#e6d0aa);border-radius:31px;padding:16px 14px 17px;box-shadow:0 24px 58px rgba(0,0,0,.29),inset 0 2px rgba(255,255,255,.85),inset 0 -4px rgba(117,78,34,.08);color:var(--ink);overflow:hidden}
+.machine:before{content:"";position:absolute;left:14px;right:14px;top:11px;height:8px;border-radius:99px;background:linear-gradient(90deg,#c9544b 0 30%,#d8aa49 30% 55%,#4f8e72 55% 78%,#548ba0 78%);opacity:.84}
+.marquee{text-align:center;margin:8px 0 7px}.marquee strong{display:block;font-size:20px;letter-spacing:.08em}.marquee small{font-size:10px;color:#6e797b;font-weight:800}
+.slotArea{display:flex;justify-content:center;align-items:center;gap:9px;margin:3px auto 10px;font-size:10px;font-weight:900;color:#6b6963}
+.medalSlot{position:relative;width:78px;height:28px;border-radius:10px;background:linear-gradient(#9d8a70,#5b4c3a);box-shadow:inset 0 4px 8px rgba(0,0,0,.38),0 2px rgba(255,255,255,.55)}
+.medalSlot:before{content:"";position:absolute;left:13px;right:13px;top:10px;height:5px;border-radius:99px;background:#181512}
+.medalSlot.flash{animation:slotFlash .62s ease}@keyframes slotFlash{50%{box-shadow:0 0 0 5px rgba(255,213,106,.32),0 0 22px rgba(255,213,106,.62)}}
+.screenShell{margin:0 auto;width:min(96%,380px);border-radius:30px;background:linear-gradient(145deg,#142e38,#071a22);box-shadow:inset 0 0 0 7px #bea06f,inset 0 0 0 9px #775a39,0 10px 24px rgba(55,37,15,.2);padding:15px}
+.gameScreen{position:relative;min-height:420px;border-radius:23px;background:
+  radial-gradient(circle at 50% 10%,rgba(96,185,215,.17),transparent 38%),
+  linear-gradient(180deg,#173d4c,#0e2935 60%,#0a202a);
+  border:2px solid rgba(230,219,185,.18);box-shadow:inset 0 0 26px rgba(0,0,0,.28);padding:18px;color:#fff7e7;text-align:center;overflow:hidden}
+.targetLabel{font-size:11px;font-weight:900;opacity:.68;letter-spacing:.06em;margin-top:4px}
+.targetTime{font-size:56px;line-height:1;font-weight:1000;letter-spacing:-.03em;margin-top:6px;text-shadow:0 5px 18px rgba(0,0,0,.3)}
+.targetTime span{font-size:20px;opacity:.72;margin-left:4px}
+.ruleText{font-size:11px;font-weight:800;opacity:.68;margin-top:8px;line-height:1.5}
+.stopwatch{margin:28px auto 18px;width:min(92%,285px);aspect-ratio:1;border-radius:50%;position:relative;background:radial-gradient(circle at 45% 37%,#f7f8f4 0 4%,#e1e2dc 5% 52%,#9a9e9c 53% 57%,#495256 58% 62%,#18262b 63% 100%);box-shadow:0 14px 30px rgba(0,0,0,.28),inset 0 4px 5px rgba(255,255,255,.6)}
+.stopwatch:before{content:"";position:absolute;left:50%;top:-25px;transform:translateX(-50%);width:54px;height:28px;border-radius:12px 12px 7px 7px;background:linear-gradient(#8d9697,#4c585b);box-shadow:inset 0 2px rgba(255,255,255,.3)}
+.display{position:absolute;inset:16%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#14242a,#0a161b 74%);box-shadow:inset 0 0 22px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.07)}
+.elapsed{font-variant-numeric:tabular-nums;font-size:48px;font-weight:1000;letter-spacing:.02em;color:#f5e8bb;text-shadow:0 0 18px rgba(245,217,128,.18)}
+.elapsed.hidden{letter-spacing:.1em;color:#8fa0a5}
+.hideNotice{position:absolute;left:50%;bottom:21%;transform:translateX(-50%);font-size:9px;font-weight:900;color:#8fa0a5;white-space:nowrap}
+.actionArea{display:grid;gap:10px;margin-top:5px}
+.actionBtn{width:100%;border:0;border-radius:19px;padding:14px 15px;font-weight:1000;color:#fff;cursor:pointer}
+.actionBtn.start{background:linear-gradient(#5a9b7e,#39765d);box-shadow:0 6px 0 #285440}
+.actionBtn.stop{background:linear-gradient(#df655b,#b74640);box-shadow:0 6px 0 #7d302b;font-size:18px}
+.actionBtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.actionBtn:disabled{opacity:.4;cursor:default}
+.resultPanel{margin-top:14px;min-height:80px;border-radius:18px;padding:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);display:grid;place-items:center}
+.resultPanel strong{display:block;font-size:24px;letter-spacing:.03em}.resultPanel small{display:block;margin-top:4px;font-size:10px;opacity:.68;font-weight:800}
+.resultPanel.perfect strong{color:#ffe482}.resultPanel.great strong{color:#abdfbd}.resultPanel.good strong{color:#acd9e7}.resultPanel.miss strong{color:#e6aaa4}
+.startOverlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:23px;background:rgba(5,16,22,.58);backdrop-filter:blur(4px)}
+.startCard{width:min(94%,320px);padding:21px 18px;border-radius:24px;background:rgba(249,241,221,.98);color:#243139;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.25)}
+.startCard h2{margin:0 0 7px;font-size:21px}.startCard p{margin:0 0 13px;font-size:12px;line-height:1.65;color:#667174}
+.sample{font-size:13px;font-weight:1000;margin:5px 0 14px;padding:9px;border-radius:14px;background:#efe5cf}
+.bigBtn{width:100%;border:0;border-radius:18px;padding:13px 15px;background:linear-gradient(#df6b60,#b84943);box-shadow:0 5px 0 #7d302b;color:white;font-weight:1000;cursor:pointer}.bigBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #7d302b}
+.message{text-align:center;min-height:53px;display:grid;place-items:center;margin:9px 0 7px}.message strong{display:block;font-size:19px}.message small{display:block;font-size:10px;margin-top:2px;color:#707875;font-weight:800}
+.playBtn{width:100%;border:0;border-radius:19px;padding:14px 15px;background:linear-gradient(#d76157,#b74640);box-shadow:0 6px 0 #7e2f2b;color:#fff;font-weight:1000;cursor:pointer}.playBtn:disabled{opacity:.5}.playBtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #7e2f2b}
+.rules{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:9px;color:#67716e;font-size:9px;font-weight:900}
+.coinFly{position:fixed;z-index:1000;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;pointer-events:none;opacity:0}
+.coinReward{position:absolute;left:50%;top:55%;z-index:50;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;opacity:0;transform:translate(-50%,-50%) scale(.4)}
+.coinReward.go{animation:reward 1.05s cubic-bezier(.17,.78,.25,1) forwards}@keyframes reward{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}22%{opacity:1;transform:translate(-50%,-65%) scale(1.16)}70%{opacity:1;transform:translate(-50%,-94%) scale(1)}100%{opacity:0;transform:translate(-50%,-128%) scale(.78)}}
+.utility{margin-top:11px;display:flex;justify-content:space-between;gap:8px}.toggles{display:flex;gap:7px}.iconBtn,.testBtn{border:1px solid rgba(255,255,255,.13);border-radius:13px;background:rgba(0,0,0,.13);color:#f1ecdf}.iconBtn{width:39px;height:39px;font-size:17px}.iconBtn[aria-pressed="false"]{opacity:.4}.testBtn{padding:9px 10px;font-size:9px;font-weight:900}
+.noteText{text-align:center;font-size:9px;opacity:.54;line-height:1.5;margin-top:8px}
+@media(max-width:360px){.targetTime{font-size:48px}.elapsed{font-size:42px}.stopwatch{width:min(90%,250px)}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+<style id="arcade-embed-style">
+html.embed,html.embed body{background:#173740!important;min-height:100%!important}
+html.embed body{display:block!important;overflow:auto!important}
+html.embed #app{width:100%!important;min-height:100vh!important;padding:8px!important;background:transparent!important}
+html.embed .topbar,
+html.embed .weekCard,
+html.embed .utility,
+html.embed .note,
+html.embed .noteText,
+html.embed .devTools,
+html.embed details.devTools,
+html.embed .demoGuide,
+html.embed .startOverlay{display:none!important}
+html.embed .machine{margin:0 auto!important;max-width:470px!important;box-shadow:none!important}
+html.embed .screenShell{max-width:100%!important}
+html.embed .gameScreen{max-height:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="title">MEDAL ARCADE<span class="subtitle">SUNDAY GAME DAY</span></div>
+  <div class="wallet" id="wallet"><div class="coinMini">M</div><b id="medalCount">0</b><span>まい</span></div>
+</header>
+
+<section class="weekCard">
+  <div class="weekHead"><div><strong>こんしゅうの おくすり</strong><small>7日つづけると、日曜日だけゲーム解放</small></div><span class="badge" id="badge">LOCKED</span></div>
+  <div class="weekDays" id="weekDays"></div><div class="weekStatus" id="weekStatus"></div>
+</section>
+
+<main class="machine">
+  <div class="marquee"><strong>ぴったりストップ</strong><small>STOPWATCH CHALLENGE</small></div>
+  <div class="slotArea"><span>MEDAL SLOT</span><div class="medalSlot" id="medalSlot"></div></div>
+
+  <section class="screenShell">
+    <div class="gameScreen">
+      <div class="targetLabel">今回の目標</div>
+      <div class="targetTime"><span id="targetSec">--</span><span>秒</span></div>
+      <div class="ruleText">目標の時間ぴったりをねらってSTOP！<br>±0.30秒以内で勝ち</div>
+
+      <div class="stopwatch">
+        <div class="display">
+          <div>
+            <div class="elapsed" id="elapsed">0.00</div>
+            <div class="hideNotice" id="hideNotice">2秒後に表示が消えます</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actionArea">
+        <button class="actionBtn start" id="startBtn" disabled>START</button>
+        <button class="actionBtn stop" id="stopBtn" disabled>STOP!</button>
+      </div>
+
+      <div class="resultPanel" id="resultPanel">
+        <div><strong>メダルを入れてね</strong><small>目標は毎回3〜19秒で変わります</small></div>
+      </div>
+
+      <div class="startOverlay" id="startOverlay">
+        <div class="startCard">
+          <h2>ぴったりストップ</h2>
+          <p>毎回ちがう目標時間を、感覚だけで当てよう。途中で時間表示は消えます。</p>
+          <div class="sample">例：13秒ちょうどで止めよう！</div>
+          <button class="bigBtn" id="trialBtn">▶ 試しにあそぶ</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="message" id="message"><div><strong>メダルを入れてスタート</strong><small>±0.30秒以内でメダル1枚GET</small></div></div>
+  <button class="playBtn" id="playBtn">🪙 メダルを入れてスタート</button>
+
+  <div class="rules">
+    <span>PERFECT ±0.10</span>
+    <span>GREAT ±0.30</span>
+    <span>GOOD ±0.60</span>
+  </div>
+  <div class="coinReward" id="coinReward">+1</div>
+</main>
+
+<div class="utility">
+  <div class="toggles"><button class="iconBtn" id="soundBtn" aria-pressed="true">♪</button><button class="iconBtn" id="vibeBtn" aria-pressed="true">⌁</button></div>
+  <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
+</div>
+<div class="utility"><button class="testBtn" id="testWeekBtn">試作：今週7日達成</button><button class="testBtn" id="testSundayBtn">試作：日曜として確認</button></div>
+<p class="noteText">目標は3〜19秒の整数からランダム。直前と同じ秒数は避けます。</p>
+<div class="coinFly" id="coinFly">M</div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+const STORE='medicine-medal-arcade-wallet-v2';
+const SETTINGS='medicine-medal-arcade-settings-v1';
+const ADHERENCE='medicine-medal-weekly-adherence-v1';
+const DEBUG='medicine-medal-arcade-debug-v1';
+const LAST_TARGET='medicine-medal-stopwatch-last-target-v1';
+const TZ='Asia/Tokyo';
+
+const $=id=>document.getElementById(id);
+const medalCount=$('medalCount'),walletEl=$('wallet'),weekDays=$('weekDays'),weekStatus=$('weekStatus'),badge=$('badge');
+const medalSlot=$('medalSlot'),coinFly=$('coinFly'),coinReward=$('coinReward');
+const playBtn=$('playBtn'),trialBtn=$('trialBtn'),startOverlay=$('startOverlay'),startBtn=$('startBtn'),stopBtn=$('stopBtn');
+const targetSec=$('targetSec'),elapsedEl=$('elapsed'),hideNotice=$('hideNotice'),resultPanel=$('resultPanel'),message=$('message');
+const soundBtn=$('soundBtn'),vibeBtn=$('vibeBtn'),testMedalBtn=$('testMedalBtn'),testWeekBtn=$('testWeekBtn'),testSundayBtn=$('testSundayBtn');
+
+let wallet=loadInt(STORE,0);
+let settings=loadJson(SETTINGS,{sound:true,vibe:true});
+let adherence=loadJson(ADHERENCE,{doneDates:{}});
+let debug=loadJson(DEBUG,{sunday:false});
+if(!adherence.doneDates)adherence.doneDates={};
+
+let state='idle';
+let audio=null;
+let target=0;
+let startAt=0;
+let raf=0;
+let shownHidden=false;
+
+renderAll();renderSettings();
+
+trialBtn.onclick=enableTrial;
+playBtn.onclick=insertMedal;
+startBtn.onclick=startTimer;
+stopBtn.onclick=stopTimer;
+
+soundBtn.onclick=()=>{settings.sound=!settings.sound;save(SETTINGS,settings);renderSettings();if(settings.sound)tone(620,.05,.02)};
+vibeBtn.onclick=()=>{settings.vibe=!settings.vibe;save(SETTINGS,settings);renderSettings();vibrate(8)};
+testMedalBtn.onclick=markMedicationDone;
+testWeekBtn.onclick=()=>{weekKeys().forEach(k=>adherence.doneDates[k]=true);save(ADHERENCE,adherence);renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.07,.02),70)};
+testSundayBtn.onclick=()=>{debug.sunday=!debug.sunday;save(DEBUG,debug);renderAll()};
+
+function enableTrial(){
+  weekKeys().forEach(k=>adherence.doneDates[k]=true);
+  save(ADHERENCE,adherence);
+  debug.sunday=true;save(DEBUG,debug);
+  if(wallet<3){wallet=3;localStorage.setItem(STORE,String(wallet))}
+  startOverlay.style.display='none';
+  renderAll();
+  setMessage('準備OK','メダルを入れてスタート')
+}
+
+function insertMedal(){
+  if(state!=='idle'&&state!=='over')return;
+  if(!isUnlocked()){setMessage('まだ遊べません','1週間つづけた日曜日に解放されます');return}
+  if(wallet<1){setMessage('メダルがありません','服薬できた日に1枚たまります');return}
+
+  state='inserting';playBtn.disabled=true;
+  const wr=walletEl.getBoundingClientRect(),sr=medalSlot.getBoundingClientRect();
+  coinFly.style.opacity=1;
+  coinFly.style.left=(wr.left+wr.width/2-25)+'px';
+  coinFly.style.top=(wr.top+wr.height/2-25)+'px';
+
+  const tx=(sr.left+sr.width/2)-(wr.left+wr.width/2);
+  const ty=(sr.top+sr.height/2)-(wr.top+wr.height/2);
+
+  const a=coinFly.animate([
+    {transform:'translate(0,0) scale(.9) rotate(0)'},
+    {transform:`translate(${tx*.55}px,${ty*.35}px) scale(1.08) rotate(240deg)`,offset:.55},
+    {transform:`translate(${tx}px,${ty}px) scale(.48) rotate(520deg)`,opacity:1}
+  ],{duration:780,easing:'cubic-bezier(.2,.72,.25,1)',fill:'forwards'});
+
+  tone(520,.045,.02);setTimeout(()=>tone(760,.05,.018),260);
+
+  a.onfinish=()=>{
+    coinFly.style.opacity=0;
+    coinFly.getAnimations().forEach(x=>x.cancel());
+    wallet--;localStorage.setItem(STORE,String(wallet));renderWallet();
+    medalSlot.classList.remove('flash');void medalSlot.offsetWidth;medalSlot.classList.add('flash');
+    metalClink();vibrate([8,24,8]);
+    setTimeout(prepareRound,320)
+  }
+}
+
+function prepareRound(){
+  target=nextTarget();
+  targetSec.textContent=target;
+  elapsedEl.textContent='0.00';
+  elapsedEl.classList.remove('hidden');
+  hideNotice.textContent='2秒後に表示が消えます';
+  hideNotice.style.opacity='1';
+  resultPanel.className='resultPanel';
+  resultPanel.innerHTML='<div><strong>STARTを押そう</strong><small>目標時間を覚えてからスタート</small></div>';
+
+  state='ready';
+  startBtn.disabled=false;
+  stopBtn.disabled=true;
+  setMessage(`${target}秒ぴったりをねらえ！`,'STARTを押したら計測開始');
+  renderAccess()
+}
+
+function startTimer(){
+  if(state!=='ready')return;
+  state='running';
+  startBtn.disabled=true;
+  stopBtn.disabled=false;
+  shownHidden=false;
+  startAt=performance.now();
+  elapsedEl.textContent='0.00';
+  elapsedEl.classList.remove('hidden');
+  hideNotice.style.opacity='1';
+
+  tone(660,.055,.025);
+  vibrate(6);
+  resultPanel.className='resultPanel';
+  resultPanel.innerHTML='<div><strong>計測中...</strong><small>目標の感覚を覚えてSTOP！</small></div>';
+  setMessage('計測中！',`${target}秒でSTOP`);
+  cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(tick)
+}
+
+function tick(now){
+  if(state!=='running')return;
+  const sec=(now-startAt)/1000;
+
+  if(sec<2){
+    elapsedEl.textContent=sec.toFixed(2)
+  }else{
+    if(!shownHidden){
+      shownHidden=true;
+      elapsedEl.textContent='??.??';
+      elapsedEl.classList.add('hidden');
+      hideNotice.textContent='感覚だけでSTOP！';
+      tone(410,.04,.014)
+    }
+  }
+
+  // safety auto-stop after target + 4 sec or 23 sec max
+  if(sec>=Math.min(23,target+4)){
+    finishRound(sec,true);
+    return
+  }
+  raf=requestAnimationFrame(tick)
+}
+
+function stopTimer(){
+  if(state!=='running')return;
+  const sec=(performance.now()-startAt)/1000;
+  finishRound(sec,false)
+}
+
+function finishRound(actual,auto){
+  cancelAnimationFrame(raf);
+  state='over';
+  stopBtn.disabled=true;
+  startBtn.disabled=true;
+
+  elapsedEl.classList.remove('hidden');
+  elapsedEl.textContent=actual.toFixed(2);
+  hideNotice.style.opacity='0';
+
+  const diff=actual-target;
+  const abs=Math.abs(diff);
+  const sign=diff>=0?'+':'';
+  let grade='TRY AGAIN',cls='miss';
+
+  if(abs<=.10){grade='PERFECT!',cls='perfect'}
+  else if(abs<=.30){grade='GREAT!',cls='great'}
+  else if(abs<=.60){grade='GOOD!',cls='good'}
+
+  resultPanel.className='resultPanel '+cls;
+  resultPanel.innerHTML=`<div><strong>${grade}</strong><small>${actual.toFixed(2)}秒　差 ${sign}${diff.toFixed(2)}秒${auto?'（自動停止）':''}</small></div>`;
+
+  if(abs<=.30){
+    setMessage('勝ち！','メダル1枚GET');
+    tone(523,.07,.03);setTimeout(()=>tone(659,.08,.03),80);setTimeout(()=>tone(784,.13,.035),160);
+    vibrate([10,30,15]);
+    setTimeout(awardMedal,260)
+  }else{
+    setMessage('おしい！',`${Math.abs(diff).toFixed(2)}秒差`);
+    tone(310,.07,.018);setTimeout(()=>tone(245,.10,.015),75);vibrate(10)
+  }
+  renderAccess()
+}
+
+function awardMedal(){
+  wallet++;
+  localStorage.setItem(STORE,String(wallet));
+  renderWallet();
+  coinReward.classList.remove('go');void coinReward.offsetWidth;coinReward.classList.add('go')
+}
+
+function nextTarget(){
+  const prev=loadInt(LAST_TARGET,-1);
+  let n;
+  do{n=3+Math.floor(Math.random()*17)}while(n===prev);
+  localStorage.setItem(LAST_TARGET,String(n));
+  return n
+}
+
+function setMessage(a,b){message.innerHTML=`<div><strong>${a}</strong><small>${b}</small></div>`}
+
+function markMedicationDone(){
+  const k=currentDateKey();
+  if(adherence.doneDates[k]){setMessage('今日は記録ずみ','メダルは受け取りずみ');return}
+  adherence.doneDates[k]=true;
+  wallet++;
+  localStorage.setItem(STORE,String(wallet));
+  save(ADHERENCE,adherence);
+  renderAll();
+  tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(8)
+}
+
+function renderAll(){renderWallet();renderWeek();renderAccess()}
+function renderWallet(){medalCount.textContent=wallet}
+
+function renderWeek(){
+  const keys=weekKeys(),names=['月','火','水','木','金','土','日'];
+  weekDays.innerHTML='';
+  keys.forEach((k,i)=>{
+    const d=document.createElement('div');
+    d.className='dayCell'+(adherence.doneDates[k]?' done':'');
+    d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;
+    weekDays.appendChild(d)
+  });
+  const count=keys.filter(k=>adherence.doneDates[k]).length;
+  if(isUnlocked()){
+    badge.textContent='OPEN';badge.classList.add('open');
+    weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b> ${wallet}枚使えます。`
+  }else{
+    badge.textContent='LOCKED';badge.classList.remove('open');
+    weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは7日つづけた日曜日に使えます。`
+  }
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認'
+}
+
+function renderAccess(){
+  const ok=isUnlocked()&&wallet>0&&(state==='idle'||state==='over');
+  playBtn.disabled=!ok;
+
+  if(['inserting','ready','running'].includes(state)){playBtn.disabled=true;return}
+  if(!isSunday())playBtn.textContent='🔒 日曜日に解放';
+  else if(!weekComplete())playBtn.textContent='🔒 今週7日達成で解放';
+  else if(wallet<1)playBtn.textContent='メダルがありません';
+  else playBtn.textContent='🪙 メダルを入れてスタート'
+}
+
+function renderSettings(){
+  soundBtn.setAttribute('aria-pressed',String(settings.sound));
+  vibeBtn.setAttribute('aria-pressed',String(settings.vibe))
+}
+
+function isUnlocked(){return isSunday()&&weekComplete()}
+function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k])}
+function isSunday(){return dayOfWeek(currentDateKey())===0}
+function weekKeys(){const s=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(s,i))}
+function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real}
+function todayJstKey(){
+  const ps=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const p=Object.fromEntries(ps.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  return `${p.year}-${p.month}-${p.day}`
+}
+function weekStartKey(k){const d=parseKey(k),off=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-off);return keyFromDate(d)}
+function addDaysKey(k,n){const d=parseKey(k);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d)}
+function dayOfWeek(k){return parseKey(k).getUTCDay()}
+function parseKey(k){return new Date(k+'T00:00:00Z')}
+function keyFromDate(d){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`}
+
+function loadInt(k,f){const n=parseInt(localStorage.getItem(k),10);return Number.isFinite(n)?n:f}
+function loadJson(k,f){try{return {...f,...JSON.parse(localStorage.getItem(k)||'{}')}}catch(_){return f}}
+function save(k,v){localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v))}
+function getAudio(){audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
+
+function tone(freq,dur=.07,vol=.02,type='square'){
+  if(!settings.sound)return;
+  try{
+    const a=getAudio(),o=a.createOscillator(),g=a.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol,a.currentTime+.006);
+    g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);
+    o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+.02)
+  }catch(_){}
+}
+function metalClink(){tone(1450,.035,.025,'square');setTimeout(()=>tone(860,.07,.018,'triangle'),30)}
+function vibrate(p){if(settings.vibe&&navigator.vibrate)navigator.vibrate(p)}
+})();
+</script>
+</body>
+</html>

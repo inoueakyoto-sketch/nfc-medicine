@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#172c3d">
+<title>リズムタップ アーケード v0.1</title>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');</script>
+<style>
+:root{
+  --bg:#132838;--panel:#f2ead8;--ink:#233038;--gold:#d6a643;--gold2:#f1d27c;
+  --red:#d96257;--blue:#58a6c4;--green:#65a982;--shadow:0 22px 55px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:#0d2130;font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif}
+body{display:flex;justify-content:center;min-height:100dvh;overflow-x:hidden}
+button{font:inherit}
+#app{position:relative;width:min(100vw,480px);min-height:100dvh;padding:max(14px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% -5%,rgba(255,245,190,.11),transparent 34%),linear-gradient(180deg,#21485b 0%,#17384c 43%,#102839 100%);overflow:hidden;color:#f8f1df}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.title{font-weight:900;letter-spacing:.08em;font-size:13px}.subtitle{display:block;font-size:10px;opacity:.62;margin-top:2px}
+.wallet{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 7px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(0,0,0,.16)}
+.coinMini{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff0b6 0 10%,var(--gold2) 11% 44%,var(--gold) 45% 73%,#9d6b20 74% 100%);border:2px solid #f6dc8b;color:#855b1b;font-size:11px;font-weight:1000}
+.wallet b{font-size:18px;min-width:22px;text-align:center}.wallet span{font-size:11px;opacity:.7}
+.weekCard{margin-bottom:12px;padding:11px 12px;border:1px solid rgba(255,255,255,.13);border-radius:22px;background:rgba(4,20,28,.26)}
+.weekHead{display:flex;justify-content:space-between;gap:10px}.weekHead strong{font-size:13px}.weekHead small{display:block;font-size:9px;opacity:.58;margin-top:2px}
+.badge{align-self:flex-start;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.2);font-size:9px;font-weight:900}.badge.open{background:rgba(79,145,116,.34);color:#ddf6e6}
+.weekDays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:9px}.dayCell{text-align:center;font-size:9px;font-weight:900;opacity:.67}
+.dayDot{width:28px;height:28px;margin:4px auto 0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3)}
+.dayCell.done{opacity:1}.dayCell.done .dayDot{background:radial-gradient(circle at 35% 30%,#ffeaa2 0 9%,#ddb04f 10% 52%,#a47023 53% 100%);color:#745018;border-color:#ecd07c}
+.weekStatus{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;font-weight:800;line-height:1.5}
+.machine{position:relative;background:linear-gradient(155deg,#f8efdf,#e6d2ad);border-radius:31px;padding:16px 15px 17px;box-shadow:var(--shadow),inset 0 2px rgba(255,255,255,.85),inset 0 -4px rgba(117,78,34,.08);color:var(--ink);overflow:hidden}
+.machine:before{content:"";position:absolute;left:14px;right:14px;top:11px;height:7px;border-radius:99px;background:linear-gradient(90deg,#d85f57 0 33%,#5ca9c6 33% 66%,#66a87f 66%);opacity:.78}
+.marquee{text-align:center;margin:8px 0 8px}.marquee strong{display:block;font-size:20px;letter-spacing:.08em}.marquee small{font-size:10px;color:#6d797c;font-weight:800}
+.slotArea{display:flex;justify-content:center;align-items:center;gap:9px;margin:4px auto 11px;font-size:10px;font-weight:900;color:#6b6963}
+.medalSlot{position:relative;width:78px;height:28px;border-radius:10px;background:linear-gradient(#9d8a70,#5b4c3a);box-shadow:inset 0 4px 8px rgba(0,0,0,.38),0 2px rgba(255,255,255,.55)}
+.medalSlot:before{content:"";position:absolute;left:13px;right:13px;top:10px;height:5px;border-radius:99px;background:#181512;box-shadow:0 1px rgba(255,255,255,.15)}
+.medalSlot.flash{animation:slotFlash .62s ease}@keyframes slotFlash{50%{box-shadow:0 0 0 5px rgba(255,213,106,.32),0 0 22px rgba(255,213,106,.62)}}
+.screenShell{position:relative;margin:0 auto;width:min(96%,390px);border-radius:28px;background:linear-gradient(145deg,#102b38,#071820);box-shadow:inset 0 0 0 7px #c2a673,inset 0 0 0 9px #775d3c,0 10px 24px rgba(55,37,15,.18);padding:14px}
+.gameScreen{position:relative;height:min(59vh,520px);min-height:405px;border-radius:22px;overflow:hidden;background:
+ radial-gradient(circle at 50% 0%,rgba(80,173,210,.22),transparent 36%),linear-gradient(180deg,#173b4e,#0d2635 62%,#091b27);
+ border:2px solid rgba(230,219,185,.18);box-shadow:inset 0 0 28px rgba(0,0,0,.25)}
+.hud{position:absolute;z-index:9;left:10px;right:10px;top:9px;display:flex;justify-content:space-between;gap:8px;font-size:10px;font-weight:900;color:#f7f0df}
+.hud .pill{padding:6px 9px;border-radius:99px;background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08)}
+.lanes{position:absolute;inset:44px 12px 78px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.lane{position:relative;border-radius:18px 18px 10px 10px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));border:1px solid rgba(255,255,255,.07);overflow:hidden}
+.lane:before{content:"";position:absolute;left:0;right:0;bottom:40px;height:2px;background:rgba(255,255,255,.22)}
+.note{position:absolute;left:50%;width:56%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 5px 13px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.5)}
+.note.l0{background:radial-gradient(circle at 35% 30%,#ffafa6,#d95e54 60%,#9a3e39)}
+.note.l1{background:radial-gradient(circle at 35% 30%,#b9e7f8,#5aa9c7 60%,#32748d)}
+.note.l2{background:radial-gradient(circle at 35% 30%,#c8efcf,#69ad82 60%,#3f7958)}
+.judgeLine{position:absolute;left:12px;right:12px;bottom:76px;height:4px;border-radius:99px;background:rgba(255,237,175,.78);box-shadow:0 0 16px rgba(255,221,117,.45)}
+.judgeText{position:absolute;z-index:12;left:50%;top:48%;transform:translate(-50%,-50%);font-weight:1000;font-size:30px;letter-spacing:.03em;color:#fff;opacity:0;pointer-events:none;text-shadow:0 4px 15px rgba(0,0,0,.35)}
+.judgeText.go{animation:judgePop .48s cubic-bezier(.18,1.5,.34,1)}@keyframes judgePop{0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}35%{opacity:1;transform:translate(-50%,-55%) scale(1.13)}100%{opacity:0;transform:translate(-50%,-76%) scale(.92)}}
+.pads{position:absolute;left:12px;right:12px;bottom:12px;height:56px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;z-index:14}
+.pad{border:0;border-radius:16px;color:#fff;font-weight:1000;font-size:18px;box-shadow:0 5px 0 rgba(0,0,0,.26);cursor:pointer;touch-action:manipulation}
+.pad:active,.pad.hit{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.26);filter:brightness(1.18)}
+.pad.p0{background:linear-gradient(#e26f64,#b94d45)}.pad.p1{background:linear-gradient(#67b5d2,#3f89a4)}.pad.p2{background:linear-gradient(#78b991,#4c8967)}
+.startOverlay{position:absolute;inset:0;z-index:25;display:grid;place-items:center;padding:26px;background:rgba(5,17,24,.54);backdrop-filter:blur(4px)}
+.startCard{width:min(94%,320px);padding:21px 18px;border-radius:24px;background:rgba(248,240,220,.97);color:#243139;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.25)}
+.startCard h2{margin:0 0 7px;font-size:21px}.startCard p{margin:0 0 13px;font-size:12px;line-height:1.6;color:#667174}
+.startCard .demo{font-size:12px;font-weight:900;margin-bottom:13px}
+.bigBtn{width:100%;border:0;border-radius:18px;padding:13px 15px;background:linear-gradient(#df6b60,#b84943);box-shadow:0 5px 0 #7d302b;color:white;font-weight:1000;cursor:pointer}.bigBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #7d302b}
+.message{text-align:center;min-height:53px;display:grid;place-items:center;margin:9px 0 7px}.message strong{display:block;font-size:19px}.message small{display:block;font-size:10px;margin-top:2px;color:#707875;font-weight:800}
+.playBtn{width:100%;border:0;border-radius:19px;padding:14px 15px;background:linear-gradient(#d76157,#b74640);box-shadow:0 6px 0 #7e2f2b;color:#fff;font-weight:1000;cursor:pointer}.playBtn:disabled{opacity:.5}.playBtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #7e2f2b}
+.rules{display:flex;justify-content:center;flex-wrap:wrap;gap:11px;margin-top:9px;color:#67716e;font-size:9px;font-weight:900}
+.coinFly{position:fixed;z-index:1000;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;pointer-events:none;opacity:0}
+.coinReward{position:absolute;left:50%;top:54%;z-index:50;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;opacity:0;transform:translate(-50%,-50%) scale(.4)}
+.coinReward.go{animation:reward 1.05s cubic-bezier(.17,.78,.25,1) forwards}@keyframes reward{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}22%{opacity:1;transform:translate(-50%,-65%) scale(1.16)}70%{opacity:1;transform:translate(-50%,-94%) scale(1)}100%{opacity:0;transform:translate(-50%,-128%) scale(.78)}}
+.utility{margin-top:11px;display:flex;justify-content:space-between;gap:8px}.toggles{display:flex;gap:7px}.iconBtn,.testBtn{border:1px solid rgba(255,255,255,.13);border-radius:13px;background:rgba(0,0,0,.13);color:#f1ecdf}.iconBtn{width:39px;height:39px;font-size:17px}.iconBtn[aria-pressed="false"]{opacity:.4}.testBtn{padding:9px 10px;font-size:9px;font-weight:900}
+.noteText{text-align:center;font-size:9px;opacity:.52;line-height:1.5;margin-top:8px}
+@media(max-width:360px){.gameScreen{min-height:385px}.pad{font-size:15px}.lanes{gap:5px}.pads{gap:5px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+<style id="arcade-embed-style">
+html.embed,html.embed body{background:#173740!important;min-height:100%!important}
+html.embed body{display:block!important;overflow:auto!important}
+html.embed #app{width:100%!important;min-height:100vh!important;padding:8px!important;background:transparent!important}
+html.embed .topbar,
+html.embed .weekCard,
+html.embed .utility,
+html.embed .note,
+html.embed .noteText,
+html.embed .devTools,
+html.embed details.devTools,
+html.embed .demoGuide,
+html.embed .startOverlay{display:none!important}
+html.embed .machine{margin:0 auto!important;max-width:470px!important;box-shadow:none!important}
+html.embed .screenShell{max-width:100%!important}
+html.embed .gameScreen{max-height:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="title">MEDAL ARCADE<span class="subtitle">SUNDAY GAME DAY</span></div>
+  <div class="wallet" id="wallet"><div class="coinMini">M</div><b id="medalCount">0</b><span>まい</span></div>
+</header>
+
+<section class="weekCard">
+  <div class="weekHead"><div><strong>こんしゅうの おくすり</strong><small>7日つづけると、日曜日だけゲーム解放</small></div><span class="badge" id="badge">LOCKED</span></div>
+  <div class="weekDays" id="weekDays"></div>
+  <div class="weekStatus" id="weekStatus"></div>
+</section>
+
+<main class="machine" id="machine">
+  <div class="marquee"><strong>リズムタップ</strong><small>1 PLAY / MEDAL 1</small></div>
+  <div class="slotArea"><span>MEDAL SLOT</span><div class="medalSlot" id="medalSlot"></div></div>
+  <section class="screenShell">
+    <div class="gameScreen" id="gameScreen">
+      <div class="hud"><div class="pill">SCORE <span id="score">0</span></div><div class="pill"><span id="time">35.0</span>s</div><div class="pill">HIT <span id="acc">0</span>%</div></div>
+      <div class="lanes" id="lanes">
+        <div class="lane" data-lane="0"></div><div class="lane" data-lane="1"></div><div class="lane" data-lane="2"></div>
+      </div>
+      <div class="judgeLine"></div>
+      <div class="judgeText" id="judgeText"></div>
+      <div class="pads">
+        <button class="pad p0" data-lane="0">●</button>
+        <button class="pad p1" data-lane="1">●</button>
+        <button class="pad p2" data-lane="2">●</button>
+      </div>
+      <div class="startOverlay" id="startOverlay">
+        <div class="startCard">
+          <h2>3つのボタンをタップ</h2>
+          <p>丸が下の線に来たら、同じ色のボタンを押そう。</p>
+          <div class="demo">赤　・　青　・　緑</div>
+          <button class="bigBtn" id="trialBtn">▶ 試しにあそぶ</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="message" id="message"><div><strong>メダルを入れてスタート</strong><small>勝つとメダル1枚GET</small></div></div>
+  <button class="playBtn" id="playBtn">🪙 メダルを入れてスタート</button>
+  <div class="rules"><span>70%以上で勝ち</span><span>PERFECT / GOOD / MISS</span><span>ゲームオーバーなし</span></div>
+  <div class="coinReward" id="coinReward">+1</div>
+</main>
+
+<div class="utility">
+  <div class="toggles"><button class="iconBtn" id="soundBtn" aria-pressed="true">♪</button><button class="iconBtn" id="vibeBtn" aria-pressed="true">⌁</button></div>
+  <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
+</div>
+<div class="utility"><button class="testBtn" id="testWeekBtn">試作：今週7日達成</button><button class="testBtn" id="testSundayBtn">試作：日曜として確認</button></div>
+<p class="noteText">オリジナルの短いリズムをWeb Audioで再生します。外部音源・既存楽曲は使っていません。</p>
+<div class="coinFly" id="coinFly">M</div>
+</div>
+<script>
+(()=>{
+'use strict';
+const STORE='medicine-medal-arcade-wallet-v2',SETTINGS='medicine-medal-arcade-settings-v1',ADHERENCE='medicine-medal-weekly-adherence-v1',DEBUG='medicine-medal-arcade-debug-v1',TZ='Asia/Tokyo';
+const medalCount=$('medalCount'),walletEl=$('wallet'),playBtn=$('playBtn'),trialBtn=$('trialBtn'),startOverlay=$('startOverlay'),weekDays=$('weekDays'),weekStatus=$('weekStatus'),badge=$('badge');
+const soundBtn=$('soundBtn'),vibeBtn=$('vibeBtn'),testMedalBtn=$('testMedalBtn'),testWeekBtn=$('testWeekBtn'),testSundayBtn=$('testSundayBtn'),coinFly=$('coinFly'),medalSlot=$('medalSlot'),coinReward=$('coinReward'),message=$('message'),judgeText=$('judgeText'),scoreEl=$('score'),timeEl=$('time'),accEl=$('acc'),gameScreen=$('gameScreen');
+const laneEls=[...document.querySelectorAll('.lane')],pads=[...document.querySelectorAll('.pad')];
+let wallet=loadInt(STORE,0),settings=loadJson(SETTINGS,{sound:true,vibe:true}),adherence=loadJson(ADHERENCE,{doneDates:{}}),debug=loadJson(DEBUG,{sunday:false});
+if(!adherence.doneDates)adherence.doneDates={};
+let state='idle',audio=null,raf=0,startTime=0,lastFrame=0,notes=[],spawnIndex=0,score=0,hits=0,perfects=0,goods=0,misses=0,total=0;
+const DURATION=35000,TRAVEL=1750,PERFECT=75,GOOD=145;
+const bpm=112,beat=60000/bpm;
+const pattern=buildPattern();
+renderAll();renderSettings();
+
+pads.forEach(p=>{
+  const lane=+p.dataset.lane;
+  p.addEventListener('pointerdown',e=>{e.preventDefault();tapLane(lane,p)});
+});
+playBtn.addEventListener('click',insertMedalAndStart);
+trialBtn.addEventListener('click',enableTrial);
+soundBtn.onclick=()=>{settings.sound=!settings.sound;save(SETTINGS,settings);renderSettings();if(settings.sound)tone(620,.05,.02)};
+vibeBtn.onclick=()=>{settings.vibe=!settings.vibe;save(SETTINGS,settings);renderSettings();vibrate(8)};
+testMedalBtn.onclick=markMedicationDone;
+testWeekBtn.onclick=()=>{weekKeys().forEach(k=>adherence.doneDates[k]=true);save(ADHERENCE,adherence);renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.07,.02),70)};
+testSundayBtn.onclick=()=>{debug.sunday=!debug.sunday;save(DEBUG,debug);renderAll()};
+
+function buildPattern(){
+  const out=[]; let t=1200;
+  const cells=[
+    [0],[1],[2],[1],[0,2],[1],[2],[0],
+    [0],[0,2],[1],[2],[1],[0],[2],[1],
+    [2],[1],[0],[1],[0,2],[2],[1],[0],
+    [0],[1],[0,2],[1],[2],[1],[0],[2],
+    [0,2],[1],[2],[1],[0],[1],[2],[0]
+  ];
+  cells.forEach((lanes,i)=>{lanes.forEach(l=>out.push({time:t,lane:l}));t+=beat*(i%8===7?.75:.5)});
+  while(t<DURATION-1200){
+    const seq=[[0],[1],[2],[0,2],[1],[2],[1],[0]];
+    seq.forEach((ls,i)=>{if(t>=DURATION-900)return;ls.forEach(l=>out.push({time:t,lane:l}));t+=beat*.5});
+  }
+  return out.sort((a,b)=>a.time-b.time);
+}
+function enableTrial(){
+  weekKeys().forEach(k=>adherence.doneDates[k]=true);save(ADHERENCE,adherence);debug.sunday=true;save(DEBUG,debug);if(wallet<3){wallet=3;save(STORE,wallet)}startOverlay.style.display='none';renderAll();setMsg('準備OK','メダルを入れてスタート');
+}
+function insertMedalAndStart(){
+  if(state!=='idle'&&state!=='over')return;
+  if(!isUnlocked()){setMsg('まだ遊べません','1週間つづけた日曜日に解放されます');return}
+  if(wallet<1){setMsg('メダルがありません','服薬できた日に1枚たまります');return}
+  state='inserting';playBtn.disabled=true;
+  const wr=walletEl.getBoundingClientRect(),sr=medalSlot.getBoundingClientRect();
+  coinFly.style.opacity=1;coinFly.style.left=(wr.left+wr.width/2-25)+'px';coinFly.style.top=(wr.top+wr.height/2-25)+'px';
+  const dx=(sr.left+sr.width/2)-(wr.left+wr.width/2),dy=(sr.top+sr.height/2)-(wr.top+wr.height/2);
+  const anim=coinFly.animate([{transform:'translate(0,0) scale(.9) rotate(0)'},{transform:`translate(${dx*.55}px,${dy*.35}px) scale(1.08) rotate(240deg)`,offset:.55},{transform:`translate(${dx}px,${dy}px) scale(.48) rotate(520deg)`,opacity:1}],{duration:780,easing:'cubic-bezier(.2,.72,.25,1)',fill:'forwards'});
+  tone(520,.045,.02);setTimeout(()=>tone(760,.05,.018),260);
+  anim.onfinish=()=>{
+    coinFly.style.opacity=0;coinFly.getAnimations().forEach(a=>a.cancel());
+    wallet--;save(STORE,wallet);renderWallet();medalSlot.classList.remove('flash');void medalSlot.offsetWidth;medalSlot.classList.add('flash');
+    metalClink();vibrate([8,24,8]);setTimeout(startGame,330);
+  };
+}
+function startGame(){
+  notes.forEach(n=>n.el.remove());notes=[];spawnIndex=0;score=hits=perfects=goods=misses=total=0;
+  scoreEl.textContent='0';accEl.textContent='0';timeEl.textContent=(DURATION/1000).toFixed(1);
+  state='playing';startTime=performance.now();lastFrame=startTime;setMsg('スタート！','線に来たら同じ色をタップ');playBtn.disabled=true;startMusic();
+  raf=requestAnimationFrame(loop);
+}
+function loop(now){
+  if(state!=='playing')return;
+  const elapsed=now-startTime;
+  while(spawnIndex<pattern.length && pattern[spawnIndex].time-TRAVEL<=elapsed){
+    spawnNote(pattern[spawnIndex]);spawnIndex++;
+  }
+  notes.forEach(n=>{
+    const age=elapsed-(n.time-TRAVEL),p=age/TRAVEL;
+    const y=8+p*84;n.el.style.top=y+'%';
+    if(!n.hit && elapsed-n.time>GOOD){n.hit=true;misses++;total++;showJudge('MISS');n.el.remove();}
+  });
+  notes=notes.filter(n=>!n.hit);
+  const remain=Math.max(0,DURATION-elapsed);timeEl.textContent=(remain/1000).toFixed(1);
+  if(elapsed>=DURATION){finishGame();return}
+  raf=requestAnimationFrame(loop);
+}
+function spawnNote(src){
+  const el=document.createElement('div');el.className=`note l${src.lane}`;el.style.top='8%';laneEls[src.lane].appendChild(el);notes.push({...src,el,hit:false});
+}
+function tapLane(lane,pad){
+  if(state!=='playing')return;
+  pad.classList.add('hit');setTimeout(()=>pad.classList.remove('hit'),90);
+  const elapsed=performance.now()-startTime;
+  let best=null,bd=9999;
+  for(const n of notes){if(n.lane!==lane||n.hit)continue;const d=Math.abs(elapsed-n.time);if(d<bd){bd=d;best=n}}
+  if(!best||bd>GOOD){showJudge('MISS');misses++;total++;tone(180,.04,.012);return}
+  best.hit=true;best.el.remove();hits++;total++;
+  if(bd<=PERFECT){perfects++;score+=100;showJudge('PERFECT');tone(760,.055,.025);vibrate(5)}
+  else{goods++;score+=60;showJudge('GOOD');tone(560,.045,.02);vibrate(3)}
+  scoreEl.textContent=score;accEl.textContent=Math.round((hits/Math.max(1,total))*100);
+}
+function finishGame(){
+  cancelAnimationFrame(raf);state='over';notes.forEach(n=>n.el.remove());notes=[];
+  while(spawnIndex<pattern.length){spawnIndex++}
+  const pct=Math.round((hits/Math.max(1,total))*100);
+  accEl.textContent=pct;stopMusic();
+  if(pct>=70){
+    setMsg('クリア！',`HIT ${pct}%　メダル1枚GET`);
+    tone(523,.08,.03);setTimeout(()=>tone(659,.09,.03),90);setTimeout(()=>tone(784,.14,.035),180);vibrate([12,35,18]);
+    setTimeout(()=>{wallet++;save(STORE,wallet);renderWallet();coinReward.classList.remove('go');void coinReward.offsetWidth;coinReward.classList.add('go')},260);
+  }else{
+    setMsg('おしい！',`HIT ${pct}%　次は70%以上をねらおう`);tone(320,.08,.018);setTimeout(()=>tone(260,.11,.015),80);vibrate(12);
+  }
+  renderAccess();
+}
+function startMusic(){
+  if(!settings.sound)return;
+  getAudio();
+  const base=audio.currentTime+.06,sec=60/bpm;
+  for(let i=0;i<80;i++){
+    const t=base+i*sec/2,step=i%8;
+    kickAt(t,step===0||step===4?0.065:0.026);
+    if(step===2||step===6)hatAt(t+.02,0.018);
+    if(i%4===0)bassAt(t,[110,123.47,98,130.81][(i/4)%4|0],0.05);
+  }
+}
+function stopMusic(){}
+function getAudio(){audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
+function tone(freq,dur=.07,vol=.02,type='square'){
+  if(!settings.sound)return;const a=getAudio(),o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(vol,a.currentTime+.008);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+.02)
+}
+function kickAt(t,v){if(!settings.sound)return;const a=getAudio(),o=a.createOscillator(),g=a.createGain();o.frequency.setValueAtTime(105,t);o.frequency.exponentialRampToValueAtTime(42,t+.09);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.11);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.12)}
+function hatAt(t,v){if(!settings.sound)return;const a=getAudio(),len=a.sampleRate*.04,b=a.createBuffer(1,len,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=b;f.type='highpass';f.frequency.value=5000;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.04);s.connect(f);f.connect(g);g.connect(a.destination);s.start(t)}
+function bassAt(t,freq,v){if(!settings.sound)return;const a=getAudio(),o=a.createOscillator(),g=a.createGain();o.type='triangle';o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.18);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.2)}
+function metalClink(){tone(1450,.035,.025,'square');setTimeout(()=>tone(860,.07,.018,'triangle'),30)}
+function showJudge(txt){judgeText.textContent=txt;judgeText.classList.remove('go');void judgeText.offsetWidth;judgeText.classList.add('go')}
+function setMsg(a,b){message.innerHTML=`<div><strong>${a}</strong><small>${b}</small></div>`}
+function markMedicationDone(){const k=currentDateKey();if(adherence.doneDates[k]){setMsg('今日は記録ずみ','メダルは受け取りずみ');return}adherence.doneDates[k]=true;wallet++;save(STORE,wallet);save(ADHERENCE,adherence);renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(8)}
+function renderAll(){renderWallet();renderWeek();renderAccess()}
+function renderWallet(){medalCount.textContent=wallet}
+function renderWeek(){
+  const keys=weekKeys(),names=['月','火','水','木','金','土','日'];weekDays.innerHTML='';
+  keys.forEach((k,i)=>{const d=document.createElement('div');d.className='dayCell'+(adherence.doneDates[k]?' done':'');d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;weekDays.appendChild(d)});
+  const count=keys.filter(k=>adherence.doneDates[k]).length;
+  if(isUnlocked()){badge.textContent='OPEN';badge.classList.add('open');weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b> ${wallet}枚使えます。`}
+  else{badge.textContent='LOCKED';badge.classList.remove('open');weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは7日つづけた日曜日に使えます。`}
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認';
+}
+function renderAccess(){
+  const ok=isUnlocked()&&wallet>0&&(state==='idle'||state==='over');playBtn.disabled=!ok;
+  if(state==='playing'||state==='inserting'){playBtn.disabled=true;return}
+  if(!isSunday())playBtn.textContent='🔒 日曜日に解放';
+  else if(!weekComplete())playBtn.textContent='🔒 今週7日達成で解放';
+  else if(wallet<1)playBtn.textContent='メダルがありません';
+  else playBtn.textContent='🪙 メダルを入れてスタート';
+}
+function renderSettings(){soundBtn.setAttribute('aria-pressed',String(settings.sound));vibeBtn.setAttribute('aria-pressed',String(settings.vibe))}
+function isUnlocked(){return isSunday()&&weekComplete()}function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k])}
+function isSunday(){return dayOfWeek(currentDateKey())===0}
+function weekKeys(){const s=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(s,i))}
+function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real}
+function todayJstKey(){const ps=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),p=Object.fromEntries(ps.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`}
+function weekStartKey(k){const d=parseKey(k),off=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-off);return keyFromDate(d)}
+function addDaysKey(k,n){const d=parseKey(k);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d)}function dayOfWeek(k){return parseKey(k).getUTCDay()}function parseKey(k){return new Date(k+'T00:00:00Z')}function keyFromDate(d){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`}
+function loadInt(k,f){const n=parseInt(localStorage.getItem(k),10);return Number.isFinite(n)?n:f}function loadJson(k,f){try{return {...f,...JSON.parse(localStorage.getItem(k)||'{}')}}catch(_){return f}}function save(k,v){localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v))}
+function vibrate(p){if(settings.vibe&&navigator.vibrate)navigator.vibrate(p)}function $(id){return document.getElementById(id)}
+})();
+</script>
+</body>
+</html>

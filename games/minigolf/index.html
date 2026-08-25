@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#1b403b">
+<title>ミニゴルフ アーケード v0.1.1</title>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');</script>
+<style>
+:root{
+  --gold:#d6a744;--gold2:#f0d17b;--red:#c9544b;--green:#4c8c70;--blue:#528da3;--ink:#26353a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:#102c2f;font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif}
+body{display:flex;justify-content:center;min-height:100dvh;overflow-x:hidden}
+button{font:inherit}
+#app{
+  width:min(100vw,480px);min-height:100dvh;position:relative;overflow:hidden;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% -5%,rgba(255,244,190,.12),transparent 34%),linear-gradient(180deg,#2b5b56,#1d4541 45%,#123332);
+  color:#f7efdd
+}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.title{font-size:13px;font-weight:1000;letter-spacing:.08em}.subtitle{display:block;font-size:10px;opacity:.62;margin-top:2px}
+.wallet{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 7px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(0,0,0,.16)}
+.coinMini{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff0b6 0 10%,var(--gold2) 11% 44%,var(--gold) 45% 73%,#9d6b20 74% 100%);border:2px solid #f6dc8b;color:#855b1b;font-size:11px;font-weight:1000}
+.wallet b{font-size:18px;min-width:22px;text-align:center}.wallet span{font-size:11px;opacity:.7}
+.weekCard{margin-bottom:12px;padding:11px 12px;border:1px solid rgba(255,255,255,.13);border-radius:22px;background:rgba(4,20,28,.26)}
+.weekHead{display:flex;justify-content:space-between;gap:10px}.weekHead strong{font-size:13px}.weekHead small{display:block;font-size:9px;opacity:.58;margin-top:2px}
+.badge{align-self:flex-start;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.2);font-size:9px;font-weight:900}.badge.open{background:rgba(79,145,116,.34);color:#ddf6e6}
+.weekDays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:9px}.dayCell{text-align:center;font-size:9px;font-weight:900;opacity:.67}
+.dayDot{width:28px;height:28px;margin:4px auto 0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3)}
+.dayCell.done{opacity:1}.dayCell.done .dayDot{background:radial-gradient(circle at 35% 30%,#ffeaa2 0 9%,#ddb04f 10% 52%,#a47023 53% 100%);color:#745018;border-color:#ecd07c}
+.weekStatus{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;font-weight:800;line-height:1.5}
+.machine{position:relative;background:linear-gradient(155deg,#fbf0dc,#e6d0aa);border-radius:31px;padding:16px 14px 17px;box-shadow:0 24px 58px rgba(0,0,0,.29),inset 0 2px rgba(255,255,255,.85),inset 0 -4px rgba(117,78,34,.08);color:var(--ink);overflow:hidden}
+.machine:before{content:"";position:absolute;left:14px;right:14px;top:11px;height:8px;border-radius:99px;background:linear-gradient(90deg,#c9544b 0 28%,#d8aa49 28% 52%,#4f8e72 52% 78%,#548ba0 78%);opacity:.84}
+.marquee{text-align:center;margin:8px 0 7px}.marquee strong{display:block;font-size:20px;letter-spacing:.08em}.marquee small{font-size:10px;color:#6e797b;font-weight:800}
+.slotArea{display:flex;justify-content:center;align-items:center;gap:9px;margin:3px auto 10px;font-size:10px;font-weight:900;color:#6b6963}
+.medalSlot{position:relative;width:78px;height:28px;border-radius:10px;background:linear-gradient(#9d8a70,#5b4c3a);box-shadow:inset 0 4px 8px rgba(0,0,0,.38),0 2px rgba(255,255,255,.55)}
+.medalSlot:before{content:"";position:absolute;left:13px;right:13px;top:10px;height:5px;border-radius:99px;background:#181512}
+.medalSlot.flash{animation:slotFlash .62s ease}@keyframes slotFlash{50%{box-shadow:0 0 0 5px rgba(255,213,106,.32),0 0 22px rgba(255,213,106,.62)}}
+.screenShell{margin:0 auto;width:min(97%,390px);border-radius:30px;background:linear-gradient(145deg,#17332f,#091c1a);box-shadow:inset 0 0 0 7px #bea06f,inset 0 0 0 9px #775a39,0 10px 24px rgba(55,37,15,.2);padding:12px}
+.gameScreen{position:relative;height:min(63vh,560px);min-height:445px;border-radius:22px;overflow:hidden;background:#5d9d65;border:2px solid rgba(230,219,185,.18);box-shadow:inset 0 0 26px rgba(0,0,0,.2)}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.hud{position:absolute;z-index:8;left:9px;right:9px;top:8px;display:flex;justify-content:space-between;gap:6px;pointer-events:none}
+.pill{padding:6px 8px;border-radius:99px;background:rgba(23,40,37,.78);color:#fff7df;font-size:9px;font-weight:1000;box-shadow:0 3px 8px rgba(0,0,0,.14)}
+.guide{position:absolute;z-index:12;left:50%;bottom:12px;transform:translateX(-50%);padding:7px 10px;border-radius:12px;background:rgba(255,250,233,.92);font-size:9px;font-weight:1000;color:#534934;pointer-events:none;opacity:0;transition:.2s}
+.guide.show{opacity:1}
+.startOverlay{position:absolute;inset:0;z-index:25;display:grid;place-items:center;padding:23px;background:rgba(5,16,14,.55);backdrop-filter:blur(4px)}
+.startCard{width:min(94%,325px);padding:21px 18px;border-radius:24px;background:rgba(249,241,221,.98);color:#243139;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.25)}
+.startCard h2{margin:0 0 7px;font-size:21px}.startCard p{margin:0 0 12px;font-size:12px;line-height:1.65;color:#667174}
+.steps{display:grid;gap:5px;text-align:left;margin:0 auto 14px;width:max-content;max-width:100%;font-size:11px;font-weight:900;color:#5d685f}
+.bigBtn{width:100%;border:0;border-radius:18px;padding:13px 15px;background:linear-gradient(#df6b60,#b84943);box-shadow:0 5px 0 #7d302b;color:white;font-weight:1000;cursor:pointer}.bigBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #7d302b}
+.message{text-align:center;min-height:53px;display:grid;place-items:center;margin:9px 0 7px}.message strong{display:block;font-size:19px}.message small{display:block;font-size:10px;margin-top:2px;color:#707875;font-weight:800}
+.playBtn{width:100%;border:0;border-radius:19px;padding:14px 15px;background:linear-gradient(#d76157,#b74640);box-shadow:0 6px 0 #7e2f2b;color:#fff;font-weight:1000;cursor:pointer}.playBtn:disabled{opacity:.5}.playBtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #7e2f2b}
+.rules{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:9px;color:#67716e;font-size:9px;font-weight:900}
+.coinFly{position:fixed;z-index:1000;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;pointer-events:none;opacity:0}
+.coinReward{position:absolute;left:50%;top:55%;z-index:50;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#fff0b3 0 10%,#efcb70 11% 45%,#d6a643 46% 76%,#98631e 77% 100%);border:4px solid #f7db88;color:#7d541b;font-weight:1000;opacity:0;transform:translate(-50%,-50%) scale(.4)}
+.coinReward.go{animation:reward 1.05s cubic-bezier(.17,.78,.25,1) forwards}@keyframes reward{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}22%{opacity:1;transform:translate(-50%,-65%) scale(1.16)}70%{opacity:1;transform:translate(-50%,-94%) scale(1)}100%{opacity:0;transform:translate(-50%,-128%) scale(.78)}}
+.cupFlash{position:absolute;z-index:30;left:50%;top:48%;transform:translate(-50%,-50%);font-size:40px;font-weight:1000;color:#fff0a8;text-shadow:0 4px 16px rgba(75,43,7,.48);opacity:0;pointer-events:none}
+.cupFlash.go{animation:cupPop 1s cubic-bezier(.18,1.45,.34,1)}@keyframes cupPop{0%{opacity:0;transform:translate(-50%,-35%) scale(.45)}30%{opacity:1;transform:translate(-50%,-52%) scale(1.15)}75%{opacity:1;transform:translate(-50%,-55%) scale(1)}100%{opacity:0;transform:translate(-50%,-82%) scale(.9)}}
+.utility{margin-top:11px;display:flex;justify-content:space-between;gap:8px}.toggles{display:flex;gap:7px}.iconBtn,.testBtn{border:1px solid rgba(255,255,255,.13);border-radius:13px;background:rgba(0,0,0,.13);color:#f1ecdf}.iconBtn{width:39px;height:39px;font-size:17px}.iconBtn[aria-pressed="false"]{opacity:.4}.testBtn{padding:9px 10px;font-size:9px;font-weight:900}
+.noteText{text-align:center;font-size:9px;opacity:.54;line-height:1.5;margin-top:8px}
+@media(max-width:360px){.gameScreen{min-height:420px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+<style id="arcade-embed-style">
+html.embed,html.embed body{background:#173740!important;min-height:100%!important}
+html.embed body{display:block!important;overflow:auto!important}
+html.embed #app{width:100%!important;min-height:100vh!important;padding:8px!important;background:transparent!important}
+html.embed .topbar,
+html.embed .weekCard,
+html.embed .utility,
+html.embed .note,
+html.embed .noteText,
+html.embed .devTools,
+html.embed details.devTools,
+html.embed .demoGuide,
+html.embed .startOverlay{display:none!important}
+html.embed .machine{margin:0 auto!important;max-width:470px!important;box-shadow:none!important}
+html.embed .screenShell{max-width:100%!important}
+html.embed .gameScreen{max-height:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="title">MEDAL ARCADE<span class="subtitle">SUNDAY GAME DAY</span></div>
+  <div class="wallet" id="wallet"><div class="coinMini">M</div><b id="medalCount">0</b><span>まい</span></div>
+</header>
+
+<section class="weekCard">
+  <div class="weekHead"><div><strong>こんしゅうの おくすり</strong><small>7日つづけると、日曜日だけゲーム解放</small></div><span class="badge" id="badge">LOCKED</span></div>
+  <div class="weekDays" id="weekDays"></div><div class="weekStatus" id="weekStatus"></div>
+</section>
+
+<main class="machine">
+  <div class="marquee"><strong>ミニゴルフ</strong><small>1 HOLE / 3 SHOTS</small></div>
+  <div class="slotArea"><span>MEDAL SLOT</span><div class="medalSlot" id="medalSlot"></div></div>
+
+  <section class="screenShell">
+    <div class="gameScreen">
+      <canvas id="canvas" width="360" height="560"></canvas>
+      <div class="hud"><div class="pill">SHOT <span id="shotCount">0</span>/3</div><div class="pill">COURSE <span id="courseNo">1</span></div></div>
+      <div class="guide" id="guide">ボールを後ろへ引いて、はなす！</div>
+      <div class="cupFlash" id="cupFlash">CUP IN!</div>
+      <div class="startOverlay" id="startOverlay">
+        <div class="startCard">
+          <h2>ミニゴルフ</h2>
+          <p>3打以内にカップへ入れよう。引っ張る方向と長さでショットが変わります。</p>
+          <div class="steps">
+            <div>① ボールをタッチ</div>
+            <div>② 打ちたい方向と反対へ引く</div>
+            <div>③ 指をはなしてショット！</div>
+          </div>
+          <button class="bigBtn" id="trialBtn">▶ 試しにあそぶ</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="message" id="message"><div><strong>メダルを入れてスタート</strong><small>3打以内でメダル1枚GET</small></div></div>
+  <button class="playBtn" id="playBtn">🪙 メダルを入れてスタート</button>
+  <div class="rules"><span>1ホール</span><span>最大3打</span><span>毎回コースが変わる</span></div>
+  <div class="coinReward" id="coinReward">+1</div>
+</main>
+
+<div class="utility">
+  <div class="toggles"><button class="iconBtn" id="soundBtn" aria-pressed="true">♪</button><button class="iconBtn" id="vibeBtn" aria-pressed="true">⌁</button></div>
+  <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
+</div>
+<div class="utility"><button class="testBtn" id="testWeekBtn">試作：今週7日達成</button><button class="testBtn" id="testSundayBtn">試作：日曜として確認</button></div>
+<p class="noteText">5種類のコースから毎回ランダム。壁・障害物との反射と芝の減速を物理計算します。</p>
+<div class="coinFly" id="coinFly">M</div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+const STORE='medicine-medal-arcade-wallet-v2';
+const SETTINGS='medicine-medal-arcade-settings-v1';
+const ADHERENCE='medicine-medal-weekly-adherence-v1';
+const DEBUG='medicine-medal-arcade-debug-v1';
+const LAST_COURSE='medicine-medal-minigolf-last-course-v1';
+const TZ='Asia/Tokyo';
+
+const $=id=>document.getElementById(id);
+const canvas=$('canvas'),ctx=canvas.getContext('2d');
+const medalCount=$('medalCount'),walletEl=$('wallet'),weekDays=$('weekDays'),weekStatus=$('weekStatus'),badge=$('badge');
+const medalSlot=$('medalSlot'),coinFly=$('coinFly'),coinReward=$('coinReward');
+const playBtn=$('playBtn'),trialBtn=$('trialBtn'),startOverlay=$('startOverlay');
+const shotCountEl=$('shotCount'),courseNoEl=$('courseNo'),guide=$('guide'),cupFlash=$('cupFlash'),message=$('message');
+const soundBtn=$('soundBtn'),vibeBtn=$('vibeBtn'),testMedalBtn=$('testMedalBtn'),testWeekBtn=$('testWeekBtn'),testSundayBtn=$('testSundayBtn');
+
+let wallet=loadInt(STORE,0);
+let settings=loadJson(SETTINGS,{sound:true,vibe:true});
+let adherence=loadJson(ADHERENCE,{doneDates:{}});
+let debug=loadJson(DEBUG,{sunday:false});
+if(!adherence.doneDates)adherence.doneDates={};
+
+const W=360,H=560,R=9;
+let state='idle',audio=null,course=null,courseIndex=0,ball=null,shots=0;
+let dragging=false,dragStart=null,dragNow=null,raf=0,last=performance.now();
+
+const courses=[
+  {
+    start:{x:70,y:485}, hole:{x:286,y:92,r:13},
+    walls:[rect(26,70,308,452)],
+    obstacles:[
+      {type:'rect',x:122,y:335,w:118,h:20},
+      {type:'rect',x:78,y:215,w:112,h:18}
+    ]
+  },
+  {
+    start:{x:72,y:475}, hole:{x:286,y:98,r:13},
+    walls:[rect(24,68,312,458)],
+    obstacles:[
+      {type:'circle',x:177,y:340,r:28},
+      {type:'rect',x:210,y:225,w:84,h:18}
+    ]
+  },
+  {
+    start:{x:288,y:482}, hole:{x:76,y:88,r:13},
+    walls:[rect(24,68,312,458)],
+    obstacles:[
+      {type:'rect',x:73,y:338,w:88,h:18},
+      {type:'rect',x:195,y:252,w:98,h:18},
+      {type:'circle',x:173,y:160,r:23}
+    ]
+  },
+  {
+    start:{x:66,y:480}, hole:{x:292,y:94,r:13},
+    walls:[rect(24,68,312,458)],
+    obstacles:[
+      {type:'rect',x:94,y:397,w:128,h:17},
+      {type:'circle',x:265,y:318,r:24},
+      {type:'rect',x:74,y:218,w:124,h:17}
+    ]
+  },
+  {
+    start:{x:177,y:490}, hole:{x:177,y:88,r:13},
+    walls:[rect(24,68,312,458)],
+    obstacles:[
+      {type:'circle',x:114,y:340,r:22},
+      {type:'circle',x:244,y:340,r:22},
+      {type:'rect',x:130,y:215,w:98,h:18}
+    ]
+  }
+];
+
+renderAll();renderSettings();draw();
+
+trialBtn.onclick=enableTrial;
+playBtn.onclick=insertMedal;
+soundBtn.onclick=()=>{settings.sound=!settings.sound;save(SETTINGS,settings);renderSettings();if(settings.sound)tone(620,.05,.02)};
+vibeBtn.onclick=()=>{settings.vibe=!settings.vibe;save(SETTINGS,settings);renderSettings();vibrate(8)};
+testMedalBtn.onclick=markMedicationDone;
+testWeekBtn.onclick=()=>{weekKeys().forEach(k=>adherence.doneDates[k]=true);save(ADHERENCE,adherence);renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.07,.02),70)};
+testSundayBtn.onclick=()=>{debug.sunday=!debug.sunday;save(DEBUG,debug);renderAll()};
+
+canvas.addEventListener('pointerdown',e=>{
+  if(state!=='ready'||!ball||moving())return;
+  const p=canvasPoint(e);
+  if(Math.hypot(p.x-ball.x,p.y-ball.y)>34)return;
+  dragging=true;dragStart={x:ball.x,y:ball.y};dragNow=p;
+  canvas.setPointerCapture(e.pointerId);guide.classList.remove('show')
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  dragNow=canvasPoint(e);draw()
+});
+canvas.addEventListener('pointerup',e=>{
+  if(!dragging)return;
+  dragging=false;
+  const p=canvasPoint(e);
+  shootFromDrag(p)
+});
+canvas.addEventListener('pointercancel',()=>{dragging=false;dragNow=null;guide.classList.add('show');draw()});
+
+function enableTrial(){
+  weekKeys().forEach(k=>adherence.doneDates[k]=true);
+  save(ADHERENCE,adherence);
+  debug.sunday=true;save(DEBUG,debug);
+  if(wallet<3){wallet=3;localStorage.setItem(STORE,String(wallet))}
+  startOverlay.style.display='none';
+  renderAll();
+  setMessage('準備OK','メダルを入れてスタート')
+}
+
+function insertMedal(){
+  if(state!=='idle'&&state!=='over')return;
+  if(!isUnlocked()){setMessage('まだ遊べません','1週間つづけた日曜日に解放されます');return}
+  if(wallet<1){setMessage('メダルがありません','服薬できた日に1枚たまります');return}
+
+  state='inserting';playBtn.disabled=true;
+  const wr=walletEl.getBoundingClientRect(),sr=medalSlot.getBoundingClientRect();
+  coinFly.style.opacity=1;
+  coinFly.style.left=(wr.left+wr.width/2-25)+'px';
+  coinFly.style.top=(wr.top+wr.height/2-25)+'px';
+  const tx=(sr.left+sr.width/2)-(wr.left+wr.width/2);
+  const ty=(sr.top+sr.height/2)-(wr.top+wr.height/2);
+
+  const a=coinFly.animate([
+    {transform:'translate(0,0) scale(.9) rotate(0)'},
+    {transform:`translate(${tx*.55}px,${ty*.35}px) scale(1.08) rotate(240deg)`,offset:.55},
+    {transform:`translate(${tx}px,${ty}px) scale(.48) rotate(520deg)`,opacity:1}
+  ],{duration:780,easing:'cubic-bezier(.2,.72,.25,1)',fill:'forwards'});
+
+  tone(520,.045,.02);setTimeout(()=>tone(760,.05,.018),260);
+
+  a.onfinish=()=>{
+    coinFly.style.opacity=0;coinFly.getAnimations().forEach(x=>x.cancel());
+    wallet--;localStorage.setItem(STORE,String(wallet));renderWallet();
+    medalSlot.classList.remove('flash');void medalSlot.offsetWidth;medalSlot.classList.add('flash');
+    metalClink();vibrate([8,24,8]);
+    setTimeout(startGame,320)
+  }
+}
+
+function startGame(){
+  courseIndex=nextCourseIndex();
+  course=courses[courseIndex];
+  courseNoEl.textContent=courseIndex+1;
+  shots=0;shotCountEl.textContent='0';
+  ball={x:course.start.x,y:course.start.y,vx:0,vy:0};
+  state='ready';dragging=false;dragNow=null;
+  guide.classList.add('show');
+  setMessage('3打以内に入れよう！','ボールを後ろへ引いて、はなす');
+  renderAccess();
+  last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)
+}
+
+function nextCourseIndex(){
+  const prev=loadInt(LAST_COURSE,-1);
+  let n;
+  do{n=Math.floor(Math.random()*courses.length)}while(n===prev&&courses.length>1);
+  localStorage.setItem(LAST_COURSE,String(n));
+  return n
+}
+
+function shootFromDrag(p){
+  if(state!=='ready'||moving())return;
+  let dx=ball.x-p.x,dy=ball.y-p.y;
+  let d=Math.hypot(dx,dy);
+  if(d<8){dragNow=null;guide.classList.add('show');draw();return}
+  d=Math.min(d,130);
+  const len=Math.hypot(dx,dy)||1;
+  dx/=len;dy/=len;
+  const speed=3.4+d*2.35;
+  ball.vx=dx*speed;ball.vy=dy*speed;
+  shots++;shotCountEl.textContent=shots;
+  dragNow=null;
+  state='rolling';
+  tone(260,.045,.025,'triangle');vibrate(5);
+  setMessage(`SHOT ${shots}`,'ボールの動きを見よう')
+}
+
+function loop(now){
+  const dt=Math.min(0.033,(now-last)/1000);last=now;
+  if(ball&&moving())updatePhysics(dt);
+  draw();
+
+  if(state==='cup_pending'){
+    cupIn();
+  }else if(state==='rolling'&&!moving()){
+    if(checkCup()){
+      cupIn();
+    }else if(shots>=3){
+      state='over';
+      setMessage('おしい！','3打でカップインできず');
+      tone(310,.07,.018);setTimeout(()=>tone(245,.10,.015),75);vibrate(10);
+      renderAccess()
+    }else{
+      state='ready';
+      guide.classList.add('show');
+      setMessage('もう一打！',`あと ${3-shots} 打`);
+    }
+  }
+  raf=requestAnimationFrame(loop)
+}
+
+function updatePhysics(dt){
+  // substeps for stable collision
+  const steps=4, sdt=dt/steps;
+  for(let s=0;s<steps;s++){
+    ball.x+=ball.vx*sdt;
+    ball.y+=ball.vy*sdt;
+
+    // turf drag
+    const drag=Math.pow(0.22,sdt);
+    ball.vx*=drag;ball.vy*=drag;
+
+    resolveBoundary();
+    for(const o of course.obstacles){
+      if(o.type==='rect')resolveRect(o);
+      else resolveCircle(o);
+    }
+
+    // cup capture while slow enough and sufficiently centered
+    const h=course.hole;
+    const dist=Math.hypot(ball.x-h.x,ball.y-h.y);
+    const speed=Math.hypot(ball.vx,ball.vy);
+    if(dist<h.r-1 && speed<170){
+      ball.x=h.x;ball.y=h.y;ball.vx=0;ball.vy=0;
+      state='cup_pending';
+      return
+    }
+  }
+  if(Math.hypot(ball.vx,ball.vy)<7){ball.vx=0;ball.vy=0}
+}
+
+function resolveBoundary(){
+  const r=course.walls[0];
+  const left=r.x+R,right=r.x+r.w-R,top=r.y+R,bottom=r.y+r.h-R;
+  if(ball.x<left){ball.x=left;ball.vx=Math.abs(ball.vx)*.78;tink()}
+  if(ball.x>right){ball.x=right;ball.vx=-Math.abs(ball.vx)*.78;tink()}
+  if(ball.y<top){ball.y=top;ball.vy=Math.abs(ball.vy)*.78;tink()}
+  if(ball.y>bottom){ball.y=bottom;ball.vy=-Math.abs(ball.vy)*.78;tink()}
+}
+
+function resolveRect(o){
+  const nearestX=Math.max(o.x,Math.min(ball.x,o.x+o.w));
+  const nearestY=Math.max(o.y,Math.min(ball.y,o.y+o.h));
+  const dx=ball.x-nearestX,dy=ball.y-nearestY,d2=dx*dx+dy*dy;
+  if(d2>=R*R)return;
+
+  if(d2===0){
+    const dl=Math.abs(ball.x-o.x),dr=Math.abs(o.x+o.w-ball.x),dt=Math.abs(ball.y-o.y),db=Math.abs(o.y+o.h-ball.y);
+    const m=Math.min(dl,dr,dt,db);
+    if(m===dl){ball.x=o.x-R;ball.vx=-Math.abs(ball.vx)*.75}
+    else if(m===dr){ball.x=o.x+o.w+R;ball.vx=Math.abs(ball.vx)*.75}
+    else if(m===dt){ball.y=o.y-R;ball.vy=-Math.abs(ball.vy)*.75}
+    else{ball.y=o.y+o.h+R;ball.vy=Math.abs(ball.vy)*.75}
+    tink();return
+  }
+
+  const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,pen=R-d;
+  ball.x+=nx*pen;ball.y+=ny*pen;
+  const vn=ball.vx*nx+ball.vy*ny;
+  if(vn<0){ball.vx-=1.75*vn*nx;ball.vy-=1.75*vn*ny;tink()}
+}
+
+function resolveCircle(o){
+  const dx=ball.x-o.x,dy=ball.y-o.y,min=R+o.r,d2=dx*dx+dy*dy;
+  if(d2>=min*min||d2===0)return;
+  const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,pen=min-d;
+  ball.x+=nx*pen;ball.y+=ny*pen;
+  const vn=ball.vx*nx+ball.vy*ny;
+  if(vn<0){ball.vx-=1.8*vn*nx;ball.vy-=1.8*vn*ny;tink()}
+}
+
+function checkCup(){
+  if(state==='cup_pending')return true;
+  const h=course.hole;
+  return Math.hypot(ball.x-h.x,ball.y-h.y)<h.r-1
+}
+
+function cupIn(){
+  state='over';
+  guide.classList.remove('show');
+  cupFlash.classList.remove('go');void cupFlash.offsetWidth;cupFlash.classList.add('go');
+  setMessage('CUP IN！',`${shots}打でクリア　メダル1枚GET`);
+  tone(523,.07,.03);setTimeout(()=>tone(659,.08,.03),80);setTimeout(()=>tone(784,.13,.035),160);vibrate([10,30,15]);
+  setTimeout(awardMedal,260);
+  renderAccess()
+}
+
+function awardMedal(){
+  wallet++;localStorage.setItem(STORE,String(wallet));renderWallet();
+  coinReward.classList.remove('go');void coinReward.offsetWidth;coinReward.classList.add('go')
+}
+
+function moving(){return ball&&Math.hypot(ball.vx,ball.vy)>0.1}
+
+function canvasPoint(e){
+  const r=canvas.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  drawCourse();
+  if(!course)return;
+
+  // drag guide
+  if(dragging&&dragNow&&ball){
+    let dx=ball.x-dragNow.x,dy=ball.y-dragNow.y;
+    const d=Math.hypot(dx,dy)||1,max=Math.min(d,130);
+    dx/=d;dy/=d;
+    const endX=ball.x+dx*max*.85,endY=ball.y+dy*max*.85;
+
+    ctx.save();
+    ctx.strokeStyle='rgba(255,255,255,.86)';
+    ctx.lineWidth=3;ctx.setLineDash([7,7]);
+    ctx.beginPath();ctx.moveTo(ball.x,ball.y);ctx.lineTo(endX,endY);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,239,157,.92)';
+    ctx.beginPath();ctx.arc(endX,endY,5,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
+  drawBall(ball.x,ball.y);
+}
+
+function drawCourse(){
+  // grass
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#76b47b');g.addColorStop(1,'#4e8b5a');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+  // subtle mowing stripes
+  for(let i=0;i<10;i++){
+    ctx.fillStyle=i%2?'rgba(255,255,255,.018)':'rgba(0,0,0,.018)';
+    ctx.fillRect(i*36,0,36,H);
+  }
+
+  if(!course)return;
+
+  const b=course.walls[0];
+  ctx.strokeStyle='#e6d4a4';ctx.lineWidth=12;ctx.lineJoin='round';
+  ctx.strokeRect(b.x,b.y,b.w,b.h);
+  ctx.strokeStyle='#9c774a';ctx.lineWidth=3;
+  ctx.strokeRect(b.x,b.y,b.w,b.h);
+
+  // obstacles
+  for(const o of course.obstacles){
+    if(o.type==='rect'){
+      ctx.fillStyle='#d9c28e';ctx.strokeStyle='#8c673e';ctx.lineWidth=2;
+      roundRect(ctx,o.x,o.y,o.w,o.h,6);ctx.fill();ctx.stroke();
+    }else{
+      const rg=ctx.createRadialGradient(o.x-7,o.y-7,2,o.x,o.y,o.r);
+      rg.addColorStop(0,'#d8c190');rg.addColorStop(1,'#8f6c43');
+      ctx.fillStyle=rg;ctx.strokeStyle='#755536';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();ctx.stroke();
+    }
+  }
+
+  // cup + flag
+  const h=course.hole;
+  ctx.fillStyle='rgba(18,27,21,.75)';ctx.beginPath();ctx.ellipse(h.x,h.y,h.r,h.r*.62,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#f1eee2';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(h.x,h.y-3);ctx.lineTo(h.x,h.y-58);ctx.stroke();
+  ctx.fillStyle='#d4554b';ctx.beginPath();ctx.moveTo(h.x,h.y-58);ctx.lineTo(h.x+27,h.y-49);ctx.lineTo(h.x,h.y-40);ctx.closePath();ctx.fill();
+
+  // tee marker
+  ctx.fillStyle='rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(course.start.x,course.start.y,18,0,Math.PI*2);ctx.fill();
+}
+
+function drawBall(x,y){
+  if(!ball)return;
+  const g=ctx.createRadialGradient(x-3,y-3,1,x,y,R+2);
+  g.addColorStop(0,'#fff');g.addColorStop(.45,'#f0f0eb');g.addColorStop(1,'#b2b3ad');
+  ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='rgba(80,80,77,.65)';ctx.lineWidth=.7;ctx.stroke();
+  // dimples
+  ctx.fillStyle='rgba(130,130,125,.22)';
+  [[-3,-2],[3,-1],[-1,3]].forEach(([dx,dy])=>{ctx.beginPath();ctx.arc(x+dx,y+dy,1,0,Math.PI*2);ctx.fill()})
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()
+}
+function rect(x,y,w,h){return{x,y,w,h}}
+
+function setMessage(a,b){message.innerHTML=`<div><strong>${a}</strong><small>${b}</small></div>`}
+
+function markMedicationDone(){
+  const k=currentDateKey();
+  if(adherence.doneDates[k]){setMessage('今日は記録ずみ','メダルは受け取りずみ');return}
+  adherence.doneDates[k]=true;wallet++;
+  localStorage.setItem(STORE,String(wallet));save(ADHERENCE,adherence);
+  renderAll();tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(8)
+}
+
+function renderAll(){renderWallet();renderWeek();renderAccess()}
+function renderWallet(){medalCount.textContent=wallet}
+
+function renderWeek(){
+  const keys=weekKeys(),names=['月','火','水','木','金','土','日'];weekDays.innerHTML='';
+  keys.forEach((k,i)=>{
+    const d=document.createElement('div');d.className='dayCell'+(adherence.doneDates[k]?' done':'');
+    d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;weekDays.appendChild(d)
+  });
+  const count=keys.filter(k=>adherence.doneDates[k]).length;
+  if(isUnlocked()){
+    badge.textContent='OPEN';badge.classList.add('open');
+    weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b> ${wallet}枚使えます。`
+  }else{
+    badge.textContent='LOCKED';badge.classList.remove('open');
+    weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは7日つづけた日曜日に使えます。`
+  }
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認'
+}
+
+function renderAccess(){
+  const ok=isUnlocked()&&wallet>0&&(state==='idle'||state==='over');
+  playBtn.disabled=!ok;
+  if(['inserting','ready','rolling','cup_pending'].includes(state)){playBtn.disabled=true;return}
+  if(!isSunday())playBtn.textContent='🔒 日曜日に解放';
+  else if(!weekComplete())playBtn.textContent='🔒 今週7日達成で解放';
+  else if(wallet<1)playBtn.textContent='メダルがありません';
+  else playBtn.textContent='🪙 メダルを入れてスタート'
+}
+
+function renderSettings(){
+  soundBtn.setAttribute('aria-pressed',String(settings.sound));
+  vibeBtn.setAttribute('aria-pressed',String(settings.vibe))
+}
+
+function isUnlocked(){return isSunday()&&weekComplete()}
+function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k])}
+function isSunday(){return dayOfWeek(currentDateKey())===0}
+function weekKeys(){const s=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(s,i))}
+function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real}
+function todayJstKey(){
+  const ps=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const p=Object.fromEntries(ps.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  return `${p.year}-${p.month}-${p.day}`
+}
+function weekStartKey(k){const d=parseKey(k),off=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-off);return keyFromDate(d)}
+function addDaysKey(k,n){const d=parseKey(k);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d)}
+function dayOfWeek(k){return parseKey(k).getUTCDay()}
+function parseKey(k){return new Date(k+'T00:00:00Z')}
+function keyFromDate(d){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`}
+
+function loadInt(k,f){const n=parseInt(localStorage.getItem(k),10);return Number.isFinite(n)?n:f}
+function loadJson(k,f){try{return {...f,...JSON.parse(localStorage.getItem(k)||'{}')}}catch(_){return f}}
+function save(k,v){localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v))}
+function getAudio(){audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
+
+function tone(freq,dur=.07,vol=.02,type='square'){
+  if(!settings.sound)return;
+  try{
+    const a=getAudio(),o=a.createOscillator(),g=a.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol,a.currentTime+.006);
+    g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);
+    o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+.02)
+  }catch(_){}
+}
+function tink(){tone(710+Math.random()*120,.025,.008,'triangle')}
+function metalClink(){tone(1450,.035,.025,'square');setTimeout(()=>tone(860,.07,.018,'triangle'),30)}
+function vibrate(p){if(settings.vibe&&navigator.vibrate)navigator.vibrate(p)}
+})();
+</script>
+</body>
+</html>

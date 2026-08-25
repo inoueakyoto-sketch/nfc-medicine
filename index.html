@@ -2,470 +2,192 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  
-  <title>おくすり ぼうけんのしょ！💊</title>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  
-  <script src="list.js"></script>
-  
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; padding: 0;
-      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-      background-color: #fff9e6; color: #333; 
-      text-align: center;
-    }
-    .view { display: none; padding: 20px; min-height: 100vh; }
-    .active-view { display: block; }
-    h1, h2 { color: #ff6f00; margin-top: 20px; text-shadow: 1px 1px 0 white; }
-    p { font-size: 1.1rem; line-height: 1.5; color: #5d4037; }
-
-    .btn {
-      display: inline-block; margin: 15px auto;
-      padding: 15px 30px; font-size: 1.3rem; font-weight: bold;
-      color: white; border-radius: 50px; cursor: pointer;
-      box-shadow: 0 6px 0 rgba(0,0,0,0.1); transition: all 0.1s;
-      border: none; max-width: 90%; width: 320px;
-    }
-    .btn-camera { background-color: #ff9800; box-shadow: 0 6px 0 #ef6c00; }
-    .btn-camera:active { transform: translateY(4px); box-shadow: 0 2px 0 #ef6c00; }
-    .btn-dictionary { background-color: #4fc3f7; box-shadow: 0 6px 0 #0288d1; margin-bottom: 20px;}
-    .btn-dictionary:active { transform: translateY(4px); box-shadow: none; }
-    .btn-copy { background-color: #8bc34a; padding: 10px 20px; font-size: 1rem; border-radius: 10px; box-shadow: 0 4px 0 #689f38; margin-top: 10px;}
-    
-    .spinner {
-      border: 6px solid #f3f3f3; border-top: 6px solid #ff9800;
-      border-radius: 50%; width: 50px; height: 50px;
-      animation: spin 1s linear infinite; margin: 30px auto;
-    }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    .med-card {
-      background: white; border-radius: 20px; padding: 20px;
-      margin: 15px auto; max-width: 400px;
-      box-shadow: 0 8px 15px rgba(255,111,0,0.1);
-      border: 2px solid #ffe0b2;
-    }
-    .url-input { width: 100%; padding: 10px; font-size: 0.9rem; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; color: #777; }
-
-    .rpg-status {
-      background: linear-gradient(135deg, #fff176, #ffb74d); 
-      color: #1a237e; 
-      padding: 20px; border-radius: 25px; margin: 10px auto 30px auto;
-      max-width: 400px; box-shadow: 0 10px 20px rgba(255,167,38,0.3);
-      border: 4px solid #ffffff; 
-    }
-    .rpg-level { font-size: 2.8rem; font-weight: 900; color: #d84315; margin: 0; text-shadow: 2px 2px 0px white; } 
-    .rpg-title { font-size: 1.6rem; margin: 5px 0 0 0; font-weight: 900; color: #1a237e; text-shadow: 2px 2px 0px white; }
-    
-    .rarity-label { font-size: 2rem; font-weight: 900; margin: 10px 0; }
-    .child-comment { font-size: 1.4rem; font-weight: bold; margin: 10px auto 20px auto; padding: 25px; border-radius: 20px; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);}
-    
-    .new-badge {
-      display: inline-block; background-color: #ff5252; color: white;
-      font-size: 1.2rem; font-weight: bold; padding: 10px 20px; border-radius: 50px;
-      animation: bounce 0.8s infinite; margin-bottom: 10px; border: 3px solid white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-    .dict-grid { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 500px; margin: 0 auto; text-align: left; }
-    .dict-item { padding: 18px; border-radius: 15px; font-size: 1.1rem; font-weight: bold; display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 3px 6px rgba(0,0,0,0.05); }
-    .dict-locked { background-color: #eeeeee; color: #bdbdbd; border: 2px dashed #ccc; }
-    .dict-unlocked-N { background-color: #fff9c4; color: #ef6c00; border: 2px solid #ffcc80; }
-    .dict-unlocked-R { background-color: #e1f5fe; color: #0277bd; border: 2px solid #81d4fa; }
-    .dict-unlocked-SR { background-color: #f3e5f5; color: #7b1fa2; border: 2px solid #ce93d8; }
-    .dict-unlocked-UR { background-color: #fffde7; color: #d84315; border: 4px solid #fdd835; }
-    .rarity-tag { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.9rem; margin-right: 12px; color: white; font-weight: 900; }
-    .tag-N { background-color: #ffa726; } .tag-R { background-color: #29b6f6; } .tag-SR { background-color: #ba68c8; } .tag-UR { background-color: #fbc02d; color: #333; }
-
-    .exp-bar-container { background:rgba(255,255,255,0.5); border-radius:50px; height:15px; width:85%; margin: 10px auto; overflow:hidden; border: 2px solid white; }
-    #dict-exp-bar-fill { background: linear-gradient(90deg, #ff4081, #f48fb1); height:100%; width:0%; transition: width 0.8s ease-out; }
-  </style>
+  <meta name="theme-color" content="#f5f1e9">
+  <meta name="description" content="服薬を写真で記録してメダルをため、1週間続けられた日にミニゲームを楽しむ服薬サポートアプリ。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="おくすりメダル＋">
+  <title>おくすりメダル＋</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="network-banner" class="network-banner" hidden>オフラインです。服薬記録の送信には通信が必要です。</div>
 
-  <div id="loading-view" class="view active-view">
-    <h2 style="color: #ff9800;">ぼうけんの じゅんび中... ⏳</h2>
-    <div class="spinner"></div>
+  <div id="loading-view" class="view active-view loading-view" aria-live="polite">
+    <img class="loading-app-icon" src="assets/brand/icon-64.png" alt="" width="64" height="64">
+    <p class="eyebrow dark">OKUSURI MEDAL PLUS</p>
+    <h2>おくすりメダル＋</h2>
+    <p>じゅんびしています</p>
+    <div class="spinner" aria-hidden="true"></div>
   </div>
 
-  <div id="task-view" class="view">
-    <h1>ぼうけんの しょ ⚔️</h1>
-    
-    <div class="rpg-status">
-      <p class="rpg-level">Lv.<span id="top-level">1</span></p>
-      <p class="rpg-title" id="top-title">みならい ゆうしゃ</p>
-    </div>
-
-    <button class="btn btn-dictionary" onclick="openDictionary()">📖 どうぐ ＆ なかま ずかん</button>
-    <div id="med-list-container"></div>
-    
-    <div style="margin-top: 50px; border-top: 2px dashed #ffcc80; padding-top: 20px;">
-      <button onclick="renderNfcSetup()" style="background:none; border:none; color:#ffa726; text-decoration:underline; font-size: 1rem; cursor: pointer;">⚙️ おうちのかた用 せってい</button>
-    </div>
-  </div>
-
-  <div id="dictionary-view" class="view">
-    <h2 style="color: #0288d1;">📖 ずかん ＆ ステータス</h2>
-    
-    <div class="rpg-status">
-      <p class="rpg-level">Lv.<span id="dict-level">1</span></p>
-      <p class="rpg-title" id="dict-title">みならい ゆうしゃ</p>
-      
-      <p id="dict-exp" style="margin:15px 0 5px 0; font-size:1.2rem; font-weight:900;"></p>
-      <div class="exp-bar-container">
-        <div id="dict-exp-bar-fill"></div>
+  <div id="task-view" class="view home-view">
+    <header class="home-header">
+      <h1 class="sr-only">おくすりメダル＋</h1>
+      <img class="brand-logo" src="assets/brand/logo.png" alt="おくすりメダル＋">
+      <div class="home-meta-row">
+        <p class="brand-tagline">記録して、メダルをためよう。</p>
+        <p class="today-label" id="today-label"></p>
       </div>
-      <p id="dict-exp-tonext" style="margin:5px 0 0 0; font-size:1rem; font-weight:bold;"></p>
+    </header>
+
+    <main class="home-main">
+      <section class="today-section" aria-labelledby="today-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">TODAY</p>
+            <h2 id="today-title">きょうのおくすり</h2>
+          </div>
+          <div class="today-progress" id="today-progress">0回</div>
+        </div>
+        <p class="section-note" id="today-progress-note">のんだら、写真で記録しよう。</p>
+        <div id="med-list-container" class="medicine-list"></div>
+      </section>
+
+      <section class="arcade-summary" aria-labelledby="arcade-summary-title">
+        <div class="arcade-summary-head">
+          <div>
+            <p class="section-kicker">MEDAL ARCADE</p>
+            <h2 id="arcade-summary-title">今週のメダル</h2>
+          </div>
+          <div class="wallet-pill" aria-label="メダル残高">
+            <span class="medal-icon" aria-hidden="true">M</span>
+            <b id="task-medal-count">0</b><small>まい</small>
+          </div>
+        </div>
+        <div class="summary-status-row">
+          <span class="access-badge" id="task-access-badge">LOCK</span>
+          <p id="task-arcade-status" class="arcade-status"></p>
+        </div>
+        <div id="task-week-progress" class="mini-week" aria-label="今週の服薬記録"></div>
+        <button class="btn btn-arcade" id="open-arcade-btn" type="button">ゲームを見る</button>
+      </section>
+
+      <div class="parent-tools">
+        <button id="open-parent-settings" class="text-link" type="button">おうちのかた用設定</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="nfc-setup-view" class="view settings-view">
+    <header class="simple-header">
+      <button class="round-back light" data-view="task-view" type="button" aria-label="もどる">‹</button>
+      <div><p class="eyebrow dark">OKUSURI MEDAL PLUS</p><h1>おうちのかた用設定</h1></div>
+    </header>
+    <section class="settings-card app-info-card" aria-label="アプリ情報">
+      <img src="assets/brand/icon-64.png" alt="" width="64" height="64">
+      <div><strong>おくすりメダル＋</strong><small>Version 1.4</small></div>
+    </section>
+    <section class="settings-card">
+      <h2>NFCタグ URL</h2>
+      <p>薬ごとのURLをNFCタグへ登録します。</p>
+      <div id="nfc-url-container"></div>
+    </section>
+  </div>
+
+  <div id="camera-view" class="view camera-view">
+    <header class="simple-header">
+      <button class="round-back light" data-view="task-view" type="button" aria-label="もどる">‹</button>
+      <div><p class="eyebrow dark">MEDICINE RECORD</p><h1>服薬を記録</h1></div>
+    </header>
+    <main class="camera-shell">
+      <section class="target-med-card">
+        <span>記録するおくすり</span>
+        <h2 id="target-med-title">お薬の名前</h2>
+      </section>
+      <div class="camera-steps" aria-label="記録の手順">
+        <div class="camera-step"><b>1</b><span>おくすりを飲む</span></div>
+        <div class="camera-step"><b>2</b><span>空になった袋・シートを撮る</span></div>
+      </div>
+      <p class="camera-copy">空になった包装がわかるように撮影してください。顔を写す必要はありません。</p>
+      <label class="btn btn-camera camera-label">
+        <span class="camera-button-icon" aria-hidden="true">●</span>
+        写真を撮って記録する
+        <input type="file" accept="image/*" capture="environment" id="camera-input" hidden>
+      </label>
+      <button class="text-link" data-view="task-view" type="button">キャンセル</button>
+    </main>
+  </div>
+
+  <div id="sending-view" class="view loading-view" aria-live="polite">
+    <div class="loading-mark sending" aria-hidden="true">✓</div>
+    <h2 class="success-title">記録を送っています</h2>
+    <p>このまま少しお待ちください。</p>
+    <div class="spinner" aria-hidden="true"></div>
+  </div>
+
+  <div id="complete-view" class="view complete-view">
+    <section class="complete-card">
+      <div class="complete-check" aria-hidden="true">✓</div>
+      <p class="eyebrow dark">RECORD COMPLETE</p>
+      <h1>記録できました</h1>
+      <p class="complete-message">今日のおくすりを記録しました。</p>
+      <div class="reward-row">
+        <div class="reward-medal"><span>M</span><b>+1</b></div>
+        <div class="reward-copy"><small>GET</small><strong>メダルを1枚ためたよ</strong></div>
+      </div>
+      <div id="complete-week-progress" class="mini-week light"></div>
+      <p id="complete-arcade-status" class="arcade-status"></p>
+      <button class="btn btn-arcade" id="complete-arcade-btn" type="button" hidden>アーケードへ</button>
+      <button class="btn btn-secondary" id="complete-back-btn" type="button">今日のおくすりへ戻る</button>
+    </section>
+  </div>
+
+  <div id="arcade-view" class="view arcade-page">
+    <header class="arcade-header">
+      <button class="round-back" data-view="task-view" type="button" aria-label="もどる">‹</button>
+      <div>
+        <p class="eyebrow">OKUSURI MEDAL PLUS</p>
+        <h1>メダルアーケード</h1>
+      </div>
+      <div class="wallet-dark" aria-label="メダル残高"><span class="medal-icon">M</span><b id="arcade-medal-count">0</b></div>
+    </header>
+
+    <section class="arcade-access-card">
+      <div class="arcade-access-head">
+        <strong id="arcade-access-title">今週の記録</strong>
+        <span class="access-badge dark" id="arcade-access-badge">LOCK</span>
+      </div>
+      <div id="arcade-week-progress" class="mini-week"></div>
+      <p id="arcade-access-status"></p>
+    </section>
+
+    <div id="game-grid" class="game-groups" aria-live="polite"></div>
+    <p class="arcade-note">メダルは使わなければ消えません。ゲームは1週間つづけられた日曜日に遊べます。</p>
+  </div>
+
+  <div id="arcade-game-view" class="view game-frame-page">
+    <header class="game-frame-header">
+      <button class="round-back" id="close-game-btn" type="button" aria-label="ゲーム一覧にもどる">‹</button>
+      <div class="game-frame-title-wrap">
+        <small>おくすりメダル＋ / MEDAL ARCADE</small>
+        <strong id="game-frame-title">ゲーム</strong>
+      </div>
+      <div class="wallet-dark compact"><span class="medal-icon">M</span><b id="game-frame-medal-count">0</b></div>
+    </header>
+    <iframe id="game-frame" title="ミニゲーム" src="about:blank" allow="autoplay" loading="eager"></iframe>
+  </div>
+
+  <div id="error-view" class="view error-view">
+    <div class="error-card">
+      <div class="error-symbol" aria-hidden="true">!</div>
+      <h2>つながりませんでした</h2>
+      <p>通信環境を確認して、もう一度お試しください。</p>
+      <div id="error-details" class="error-details"></div>
+      <button class="btn btn-secondary" id="error-retry-btn" type="button">もう一度試す</button>
     </div>
-
-    <p id="dict-progress" style="font-size: 1.3rem; font-weight: bold; color: #ef6c00; margin-bottom: 20px;"></p>
-    <div id="dict-container" class="dict-grid"></div>
-    <br><br>
-    <button class="btn" style="background-color: #90a4ae; box-shadow:0 6px 0 #546e7a;" onclick="switchView('task-view')">もどる</button>
   </div>
 
-  <div id="nfc-setup-view" class="view">
-    <h2>⚙️ おうちのかた用 せってい</h2>
-    <h3 style="color:#ff6f00;">🔗 NFCタグ URL発行</h3>
-    <div id="nfc-url-container"></div>
-    <br><button class="btn" style="background-color: #90a4ae; box-shadow:0 6px 0 #546e7a;" onclick="switchView('task-view')">もどる</button>
-  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-  <div id="camera-view" class="view">
-    <h2 id="target-med-title" style="font-size: 2rem;">お薬の名前</h2>
-    <p style="font-size: 1.3rem; font-weight: bold;">のんだら、からっぽの ふくろ・シートを<br><span style="color:#e64a19; font-size: 1.5rem;">しゃしん</span> にとって教えてね！📸</p>
-    <label class="btn btn-camera" style="width: 100%; height: 100px; line-height: 60px; font-size: 1.8rem;">
-      📸 パシャッ！
-      <input type="file" accept="image/*" capture="environment" id="camera-input" style="display: none;">
-    </label>
-    <br><br><button onclick="switchView('task-view')" style="background:none; border:none; color:#777; text-decoration:underline; font-size: 1rem; cursor: pointer;">もどる</button>
-  </div>
-
-  <div id="sending-view" class="view">
-    <h2 style="color: #4caf50;">はなまる を つけています... 💮</h2>
-    <div class="spinner"></div>
-  </div>
-
-  <div id="complete-view" class="view">
-    <h1 style="font-size: 4rem; margin-top: 20px;">✨🎉✨</h1>
-    <div id="new-badge-container"></div>
-    <div id="gacha-rarity" class="rarity-label"></div>
-    <div id="child-message-box" class="child-comment"></div>
-    <button class="btn" style="background-color: #ff5252; box-shadow:0 6px 0 #d32f2f; width: 100%; font-size: 1.5rem;" onclick="location.reload()">ぼうけんをつづける！</button>
-  </div>
-
-  <div id="error-view" class="view">
-    <h2>うーん、つながらなかったよ 😢</h2>
-    <p>電波のよいところで、もういちど試してみてね。</p>
-    <div id="error-details" style="color:#c0392b; font-size:0.9rem; margin:20px auto; font-weight:bold; background:#fadbd8; padding:10px; border-radius:10px; max-width:400px; display:none;"></div>
-    <button class="btn" style="background-color: #90a4ae; box-shadow:0 6px 0 #546e7a;" onclick="location.reload()">やりなおす</button>
-  </div>
-
-  <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwy1VKCy0ud87bkvtomzsNkLrwJWE8LUI10IssxVPGr2GIgKaB1Xn1m8YDcLngC5xYywA/exec";
-
-    let state = { currentSelectedMedId: null, medList: [] };
-
-    const rarityExp = { "N": 10, "R": 50, "SR": 200, "UR": 1000 };
-    const rpgConstant = 0.683;
-
-    setTimeout(() => {
-      const loadingView = document.getElementById('loading-view');
-      if (loadingView && loadingView.classList.contains('active-view')) {
-        showError("通信タイムアウト。設定を確認してください。");
-      }
-    }, 12000);
-
-    function showError(message) {
-      const details = document.getElementById('error-details');
-      if (details) { details.innerText = message; details.style.display = "block"; }
-      switchView('error-view');
-    }
-
-    function drawGacha() {
-      const rand = Math.random() * 100;
-      let targetRarity = "N";
-      if (rand < 3) targetRarity = "UR";
-      else if (rand < 15) targetRarity = "SR";
-      else if (rand < 40) targetRarity = "R";
-      else targetRarity = "N";
-      const pool = gachaMessages.filter(m => m.rarity === targetRarity);
-      if (pool.length === 0) return {id:0, rarity:"N", text:"じゅんび中！"};
-      return pool[Math.floor(Math.random() * pool.length)];
-    }
-
-    function switchView(viewId) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
-      const target = document.getElementById(viewId);
-      if(target) target.classList.add('active-view');
-    }
-
-    function getCollectedIds() { 
-      try { return JSON.parse(localStorage.getItem('gacha_collection') || '[]'); } catch(e) { return []; }
-    }
-
-    function saveToCollection(id) {
-      const collected = getCollectedIds();
-      if (!collected.includes(id)) {
-        collected.push(id);
-        localStorage.setItem('gacha_collection', JSON.stringify(collected));
-        return true; 
-      }
-      return false; 
-    }
-
-    function calculateTotalExp(collectedIds) {
-      let totalExp = 0;
-      collectedIds.forEach(id => {
-        const card = gachaMessages.find(m => m.id === id);
-        if (card) totalExp += rarityExp[card.rarity];
-      });
-      return totalExp;
-    }
-
-    function calculateExpFromLevel(level) {
-      if (level <= 1) return 0;
-      return Math.pow((level - 1) / rpgConstant, 2);
-    }
-
-    function getRpgStatus() {
-      const collectedIds = getCollectedIds();
-      const totalExp = calculateTotalExp(collectedIds);
-      let level = Math.floor(1 + rpgConstant * Math.sqrt(totalExp));
-      if (level < 1) level = 1;
-      const titles = [
-        { minLevel: 100, title: "🌈 うちゅうの きゅうせいしゅ" },
-        { minLevel: 80, title: "👑 でんせつの ゆうしゃ" },
-        { minLevel: 50, title: "⚔️ えいゆう" },
-        { minLevel: 30, title: "🛡️ たつじん ぼうけんしゃ" },
-        { minLevel: 15, title: "🎒 いっぱしの ぼうけんしゃ" },
-        { minLevel: 5,  title: "🗡️ かけだしの ゆうしゃ" },
-        { minLevel: 1,  title: "🌱 みならい ゆうしゃ" }
-      ];
-      const statusTitle = titles.find(t => level >= t.minLevel).title;
-      const currentLevelExpMinTotal = calculateExpFromLevel(level);
-      const nextLevelExpTotal = calculateExpFromLevel(level + 1);
-      const expInLevel = totalExp - currentLevelExpMinTotal;
-      const expToNextLevel = nextLevelExpTotal - currentLevelExpMinTotal;
-      return { level, title: statusTitle, totalExp, cardCount: collectedIds.length, expInLevel, expToNextLevel };
-    }
-
-    function updateRpgDisplay() {
-      const status = getRpgStatus();
-      ['top-level', 'dict-level'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = status.level; });
-      ['top-title', 'dict-title'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = status.title; });
-      const dictExp = document.getElementById('dict-exp');
-      if(dictExp) dictExp.innerHTML = `EXP: ${Math.floor(status.totalExp)}`;
-      const dictExpBar = document.getElementById('dict-exp-bar-fill');
-      if(dictExpBar) {
-        const percentage = status.expToNextLevel > 0 ? (status.expInLevel / status.expToNextLevel) * 100 : 100;
-        dictExpBar.style.width = `${Math.min(percentage, 100)}%`;
-      }
-      const dictExpToNext = document.getElementById('dict-exp-tonext');
-      if(dictExpToNext) dictExpToNext.innerHTML = `つぎのレベルまで あと ${Math.floor(status.expToNextLevel - status.expInLevel)} EXP`;
-    }
-
-    function openDictionary() {
-      updateRpgDisplay();
-      const container = document.getElementById('dict-container');
-      container.innerHTML = '';
-      const collected = getCollectedIds();
-      document.getElementById('dict-progress').innerText = `あつめた カード： ${collected.length} / ${gachaMessages.length} まい`;
-      const sortedMessages = [...gachaMessages].sort((a, b) => {
-        const order = { "UR": 1, "SR": 2, "R": 3, "N": 4 };
-        return order[a.rarity] - order[b.rarity] || a.id - b.id;
-      });
-      sortedMessages.forEach(med => {
-        const isUnlocked = collected.includes(med.id);
-        const itemDiv = document.createElement('div');
-        if (isUnlocked) {
-          itemDiv.className = `dict-item dict-unlocked-${med.rarity}`;
-          itemDiv.innerHTML = `<span class="rarity-tag tag-${med.rarity}">${med.rarity}</span> ${med.text}`;
-        } else {
-          itemDiv.className = `dict-item dict-locked`;
-          itemDiv.innerHTML = `<span class="rarity-tag" style="background:#bdbdbd;">???</span> ？？？？？？？？`;
-        }
-        container.appendChild(itemDiv);
-      });
-      switchView('dictionary-view');
-    }
-
-    window.addEventListener('DOMContentLoaded', async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('reset')) {
-        localStorage.clear(); 
-        alert("✅ リセットしました！");
-        window.location.href = window.location.origin + window.location.pathname;
-        return;
-      }
-      updateRpgDisplay();
-      if (urlParams.has('id')) state.currentSelectedMedId = urlParams.get('id');
-      await loadMedicationList();
-    });
-
-    async function loadMedicationList() {
-      try {
-        const fetchUrl = `${GAS_URL}?action=getList&t=${Date.now()}`;
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('通信タイムアウト')), 8000));
-        const fetchPromise = fetch(fetchUrl, { method: 'GET', mode: 'cors' }).then(res => res.json());
-        const response = await Promise.race([fetchPromise, timeoutPromise]);
-        if (response && response.status === 'success') {
-          state.medList = response.data;
-          renderList();
-          if (state.currentSelectedMedId) {
-            const selectedMed = state.medList.find(m => String(m.id) === String(state.currentSelectedMedId));
-            if (selectedMed) {
-              const todayStr = new Date().toISOString().slice(0, 10);
-              const currentCount = parseInt(localStorage.getItem(`count_${selectedMed.id}_${todayStr}`) || "0", 10);
-              const limitCount = parseInt(selectedMed.limitCount || "0", 10);
-              if (limitCount > 0 && currentCount >= limitCount) {
-                alert("きょうは もう おしまい！✨\nずかんを みてみよう！");
-                state.currentSelectedMedId = null; 
-              } else {
-                openCameraView(selectedMed.id, selectedMed.title);
-                return;
-              }
-            }
-          }
-          switchView('task-view');
-        }
-      } catch (error) { showError(error.message); }
-    }
-
-    function renderList() {
-      const container = document.getElementById('med-list-container');
-      container.innerHTML = '';
-      state.medList.forEach(med => {
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const currentCount = parseInt(localStorage.getItem(`count_${med.id}_${todayStr}`) || "0", 10);
-        const limitCount = parseInt(med.limitCount || "0", 10);
-        const card = document.createElement('div');
-        card.className = 'med-card';
-        if (limitCount > 0 && currentCount >= limitCount) {
-          card.innerHTML = `<h3 style="color:#4caf50;">✅ ${med.title}</h3><p style="color: #4caf50; font-weight: bold;">きょうは おわったよ！🌟</p>`;
-        } else {
-          let countBadge = limitCount > 0 ? `<span style="font-size:0.8rem; background:#ff5252; color:white; padding:4px 8px; border-radius:50px;">あと ${limitCount - currentCount}回</span>` : '';
-          card.innerHTML = `
-            <h3 style="color:#ff6f00;">💊 ${med.title} ${countBadge}</h3>
-            <p style="font-size: 0.9rem;">(${med.time} の おくすり)</p>
-            <button class="btn btn-camera" style="padding:10px 20px; font-size:1.1rem; width:auto;" onclick="openCameraView('${med.id}', '${med.title}')">のんだよ！📸</button>
-          `;
-        }
-        container.appendChild(card);
-      });
-    }
-
-    function renderNfcSetup() {
-      const container = document.getElementById('nfc-url-container');
-      container.innerHTML = '';
-      const baseUrl = window.location.origin + window.location.pathname;
-      state.medList.forEach(med => {
-        const card = document.createElement('div');
-        card.className = 'med-card';
-        card.innerHTML = `
-          <h3>💊 ${med.title}</h3>
-          <input type="text" class="url-input" value="${baseUrl}?id=${med.id}" readonly id="nfc-url-${med.id}">
-          <br><button class="btn btn-copy" onclick="copyToClipboard('${med.id}')">コピー</button>
-        `;
-        container.appendChild(card);
-      });
-      switchView('nfc-setup-view');
-    }
-
-    function copyToClipboard(medId) {
-      const copyText = document.getElementById(`nfc-url-${medId}`);
-      copyText.select();
-      navigator.clipboard.writeText(copyText.value).then(() => alert("コピーしたよ！"));
-    }
-
-    function openCameraView(medId, medTitle) {
-      state.currentSelectedMedId = medId;
-      document.getElementById('target-med-title').innerText = medTitle;
-      switchView('camera-view');
-    }
-
-    function resizeAndConvertGachaImage(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            const canvas = document.createElement('canvas');
-            let width = img.width; let height = img.height;
-            const max = 800; 
-            if (width > height) { if (width > max) { height *= max / width; width = max; } } 
-            else { if (height > max) { width *= max / height; height = max; } }
-            canvas.width = width; canvas.height = height;
-            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]); 
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    document.getElementById('camera-input').addEventListener('change', async function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      switchView('sending-view');
-      const base64Image = await resizeAndConvertGachaImage(file);
-      
-      const payload = { 
-        action: 'log', 
-        id: state.currentSelectedMedId, 
-        name: 'ユーザー', 
-        image: base64Image
-      };
-      
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
-      const fetchPromise = fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-      try {
-        await Promise.race([fetchPromise, timeoutPromise]);
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const currentCount = parseInt(localStorage.getItem(`count_${state.currentSelectedMedId}_${todayStr}`) || "0", 10);
-        localStorage.setItem(`count_${state.currentSelectedMedId}_${todayStr}`, (currentCount + 1).toString());
-        const gachaResult = drawGacha();
-        const isNew = saveToCollection(gachaResult.id);
-        const earnedExp = rarityExp[gachaResult.rarity]; 
-        const rarityBox = document.getElementById('gacha-rarity');
-        const messageBox = document.getElementById('child-message-box');
-        const badgeContainer = document.getElementById('new-badge-container');
-        if (isNew) {
-          badgeContainer.innerHTML = `<div class="new-badge">✨ NEW! ${earnedExp} EXP ゲット！ ✨</div>`;
-        } else {
-          badgeContainer.innerHTML = '';
-        }
-        if (gachaResult.rarity === 'UR') {
-          rarityBox.innerHTML = '<span style="color:#d32f2f; font-size:2.5rem;">究極レア！【 UR 】</span>';
-          messageBox.style.backgroundColor = '#fff9c4'; messageBox.style.color = '#d32f2f'; messageBox.style.border = '5px solid #fbc02d';
-        } else if (gachaResult.rarity === 'SR') {
-          rarityBox.innerHTML = '<span style="color:#7b1fa2;">超レア！【 SR 】</span>';
-          messageBox.style.backgroundColor = '#f3e5f5'; messageBox.style.color = '#7b1fa2'; messageBox.style.border = '3px solid #ba68c8';
-        } else if (gachaResult.rarity === 'R') {
-          rarityBox.innerHTML = '<span style="color:#0277bd;">レア！【 R 】</span>';
-          messageBox.style.backgroundColor = '#e1f5fe'; messageBox.style.color = '#0277bd'; messageBox.style.border = '2px solid #81d4fa';
-        } else {
-          rarityBox.innerHTML = '<span style="color:#ef6c00;">ノーマル【 N 】</span>';
-          messageBox.style.backgroundColor = '#fffdev'; messageBox.style.color = '#ef6c00'; messageBox.style.border = '2px solid #ffcc80';
-        }
-        messageBox.innerHTML = `
-          <div style="font-size:1.6rem; margin-bottom:10px;">${gachaResult.text}</div>
-          <div style="font-size:1.2rem; color:#1a237e; background:white; display:inline-block; padding:5px 15px; border-radius:50px;">＋ ${earnedExp} EXP ゲット！</div>
-        `;
-        switchView('complete-view');
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
-        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-        updateRpgDisplay();
-      } catch (error) { showError(error.message); } finally { e.target.value = ''; }
-    });
-  </script>
+  <script src="games/manifest.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
