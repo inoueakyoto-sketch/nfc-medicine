@@ -85,7 +85,7 @@ html.embed .gameScreen{max-height:none!important}
 
   <section class="weekCard" aria-label="今週の服薬とゲーム解放状況">
     <div class="weekHead">
-      <div><strong>今週の服薬</strong><small>7日つづけると、日曜日だけゲーム解放</small></div>
+      <div><strong>今週の服薬</strong><small>7日つづけると、選んだゲームの日だけ解放</small></div>
       <span class="accessBadge" id="accessBadge">LOCKED</span>
     </div>
     <div class="weekDays" id="weekDays"></div>
@@ -133,10 +133,10 @@ html.embed .gameScreen{max-height:none!important}
     <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
   </div>
   <div class="utility" style="margin-top:7px">
-    <button class="testBtn" id="testWeekBtn">試作：今週7日達成</button>
-    <button class="testBtn" id="testSundayBtn">試作：日曜として確認</button>
+    <button class="testBtn" id="testWeekBtn">試作：7日達成</button>
+    <button class="testBtn" id="testSundayBtn">試作：ゲームの日として確認</button>
   </div>
-  <p class="note">試作版。本番では服薬完了時にメダルを貯め、今週7日すべて服薬できた日曜日だけゲームで使えます。未使用メダルは消えず、次の解放日まで再びロックされます。</p>
+  <p class="note">試作版。本番では服薬完了時にメダルを貯め、今週7日すべて服薬できたゲームの日だけ使えます。未使用メダルは消えず、次の解放日まで再びロックされます。</p>
 </div>
 <script>
 (()=>{
@@ -147,6 +147,7 @@ const SETTINGS='medicine-medal-arcade-settings-v1';
 const ADHERENCE='medicine-medal-weekly-adherence-v1';
 const DEBUG='medicine-medal-arcade-debug-v1';
 const TZ='Asia/Tokyo';
+const PARENT_SETTINGS='medicine-medal-parent-settings-v1';
 const hands={rock:{emoji:'✊',label:'グー'},scissors:{emoji:'✌️',label:'チョキ'},paper:{emoji:'✋',label:'パー'}};
 const keys=Object.keys(hands);
 const beats={rock:'scissors',scissors:'paper',paper:'rock'};
@@ -200,11 +201,11 @@ function markMedicationDone(){
   if(adherence.doneDates[key]){setMessage('今日は記録ずみ','メダルはすでに受け取っています','draw');tone(330,.05,.015);return;}
   adherence.doneDates[key]=true;saveAdherence();wallet++;saveWallet();renderAll();coinPulseTop();tone(660,.06,.025);setTimeout(()=>tone(880,.08,.02),75);vibrate(10);
   if(isUnlocked())setMessage('1週間つづいた！','今日はゲームの日。メダル解放！','win');
-  else setMessage('メダルを1枚ためた','日曜日まで大切にためておこう','');
+  else setMessage('メダルを1枚ためた','ゲームの日まで大切にためておこう','');
 }
 function startPlay(){
   if(state!=='idle'&&state!=='over')return;
-  if(!isUnlocked()){setMessage(isSunday()?'まだ解放されていません':'今日はゲームの日ではありません',isSunday()?'今週7日すべての服薬で解放':'貯めたメダルは日曜日に使えます','lose');tone(220,.08,.015);vibrate(10);return;}
+  if(!isUnlocked()){setMessage(isGameDay()?'まだ解放されていません':'今日はゲームの日ではありません',isGameDay()?'今週7日すべての服薬で解放':'貯めたメダルはゲームの日に使えます','lose');tone(220,.08,.015);vibrate(10);return;}
   if(wallet<1){setMessage('メダルがありません','服薬できた日に1枚ずつ貯まります','lose');tone(220,.08,.015);vibrate(10);return;}
   wallet--;saveWallet();renderAll();
   state='ready';roundToken++;playBtn.disabled=true;
@@ -219,7 +220,7 @@ function choose(hand){
 function resolve(player,cpu,token){
   if(player===cpu){state='draw';setMessage('あいこ！','追加メダルなし。このままもう一度','draw');pulseFlash('');tone(440,.05,.02);setTimeout(()=>tone(440,.05,.02),80);setTimeout(()=>{if(token!==roundToken)return;state='ready';cpuHand.textContent='？';cpuHand.classList.remove('reveal');playerHand.textContent='・';playerText.textContent='もう一度えらぼう';callText.textContent='あいこで…';enableHands(true);startLedSweep();},700);return;}
   if(beats[player]===cpu){state='win';setMessage('かった！','メダルを1枚GET。この日なら続けて使える','win');callText.textContent='WIN';pulseFlash('win');tone(523,.07,.028);setTimeout(()=>tone(659,.08,.03),85);setTimeout(()=>tone(784,.13,.035),170);vibrate([12,35,18]);setTimeout(()=>awardMedal(),260);setTimeout(()=>endPlay(),1050);}
-  else{state='lose';setMessage('今回はまけ','残りメダルがあれば日曜日にまた挑戦','lose');callText.textContent='TRY AGAIN';pulseFlash('lose');machine.classList.add('shake');setTimeout(()=>machine.classList.remove('shake'),330);tone(310,.08,.018);setTimeout(()=>tone(240,.12,.016),85);vibrate(18);setTimeout(()=>endPlay(),760);}
+  else{state='lose';setMessage('今回はまけ','残りメダルがあればゲームの日にまた挑戦','lose');callText.textContent='TRY AGAIN';pulseFlash('lose');machine.classList.add('shake');setTimeout(()=>machine.classList.remove('shake'),330);tone(310,.08,.018);setTimeout(()=>tone(240,.12,.016),85);vibrate(18);setTimeout(()=>endPlay(),760);}
 }
 function awardMedal(){coinDrop.classList.remove('go');void coinDrop.offsetWidth;coinDrop.classList.add('go');setTimeout(()=>{wallet++;saveWallet();renderAll();coinPulseTop();},560);}
 function endPlay(){stopLedSweep();enableHands(false);state='over';renderAll();}
@@ -234,27 +235,26 @@ function coinPulseTop(){const c=document.querySelector('.coinMini');c.animate([{
 function renderAll(){renderWallet();renderWeek();renderAccess();}
 function renderWallet(){medalCount.textContent=wallet;}
 function renderWeek(){
-  const keys=weekKeys(), names=['月','火','水','木','金','土','日'], today=currentDateKey();weekDays.innerHTML='';
-  keys.forEach((k,i)=>{const d=document.createElement('div');d.className='dayCell'+(adherence.doneDates[k]?' done':'')+(k===today?' today':'');d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;weekDays.appendChild(d)});
+  const keys=weekKeys(), names=['日','月','火','水','木','金','土'], today=currentDateKey();weekDays.innerHTML='';
+  keys.forEach((k,i)=>{const d=document.createElement('div');d.className='dayCell'+(adherence.doneDates[k]?' done':'')+(k===today?' today':'');d.innerHTML=`${names[dayOfWeek(k)]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;weekDays.appendChild(d)});
   const count=keys.filter(k=>adherence.doneDates[k]).length;
   if(isUnlocked()){accessBadge.textContent='OPEN';accessBadge.classList.add('open');weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b>　${wallet}枚のメダルを使えます。<small>勝って増えたメダルも、今日ならそのまま使えます。</small>`;}
-  else{accessBadge.textContent='LOCKED';accessBadge.classList.remove('open');if(isSunday())weekStatus.innerHTML=`🔒 今週は ${count}/7日。7日そろうと今日のゲームが解放されます。<small>貯めたメダルは消えません。次の解放日までロックされます。</small>`;else weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは日曜日だけ使えます。<small>毎日の服薬で1枚ずつ貯まり、1週間つづけられた日曜日に解放されます。</small>`;}
-  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認';
+  else{accessBadge.textContent='LOCKED';accessBadge.classList.remove('open');if(isGameDay())weekStatus.innerHTML=`🔒 この7日間は ${count}/7日。7日そろうと今日のゲームが解放されます。<small>貯めたメダルは消えません。次の解放日までロックされます。</small>`;else weekStatus.innerHTML=`🔒 この7日間は ${count}/7日。メダルはゲームの日だけ使えます。<small>毎日の服薬で1枚ずつ貯まり、1週間つづけられたゲームの日に解放されます。</small>`;}
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：ゲームの日として確認';
 }
 function renderAccess(){
   const playable=isUnlocked()&&wallet>0&&(state==='idle'||state==='over');playBtn.disabled=!playable;
   if(state==='ready'||state==='reveal'||state==='draw'||state==='win'||state==='lose'){playBtn.disabled=true;return;}
-  if(!isSunday())playBtn.innerHTML='🔒 日曜日に解放';
-  else if(!weekComplete())playBtn.innerHTML='🔒 今週7日達成で解放';
+  if(!isGameDay())playBtn.innerHTML='🔒 ゲームの日に解放';
+  else if(!weekComplete())playBtn.innerHTML='🔒 7日達成で解放';
   else if(wallet<1)playBtn.innerHTML='メダルがありません';
   else playBtn.innerHTML='メダルをつかって あそぶ <span class="cost">-1</span>';
 }
-function isUnlocked(){return isSunday()&&weekComplete();}
-function isSunday(){return dayOfWeek(currentDateKey())===0;}
+function getGameDays(){try{const raw=JSON.parse(localStorage.getItem(PARENT_SETTINGS)||'{}');const src=Array.isArray(raw.gameDays)?raw.gameDays:(Number.isInteger(Number(raw.gameDay))?[Number(raw.gameDay)]:[0]);const days=[...new Set(src.map(Number).filter(d=>Number.isInteger(d)&&d>=0&&d<=6))];return days.length?days:[0]}catch(_){return[0]}}
+function isUnlocked(){return isGameDay()&&weekComplete();}
+function isGameDay(){return getGameDays().includes(dayOfWeek(currentDateKey()))}
 function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k]);}
-function weekKeys(){const start=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(start,i));}
-function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real;}
-function todayJstKey(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`;}
+function weekKeys(){const today=currentDateKey(),start=addDaysKey(today,-6);return Array.from({length:7},(_,i)=>addDaysKey(start,i))}function currentDateKey(){const real=todayJstKey();if(!debug.sunday)return real;const cur=dayOfWeek(real),delta=Math.min(...getGameDays().map(d=>(d-cur+7)%7));return addDaysKey(real,delta)}function todayJstKey(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`;}
 function weekStartKey(key){const d=parseKey(key),day=d.getUTCDay(),offset=(day+6)%7;d.setUTCDate(d.getUTCDate()-offset);return keyFromDate(d);}
 function addDaysKey(key,n){const d=parseKey(key);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d);}
 function dayOfWeek(key){return parseKey(key).getUTCDay();}

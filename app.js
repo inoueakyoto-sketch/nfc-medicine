@@ -6,8 +6,12 @@
   const WALLET_KEY = 'medicine-medal-arcade-wallet-v2';
   const ADHERENCE_KEY = 'medicine-medal-weekly-adherence-v1';
   const DEBUG_KEY = 'medicine-medal-arcade-debug-v1';
+  const PARENT_SETTINGS_KEY = 'medicine-medal-parent-settings-v1';
+  const PARENT_PIN_KEY = 'medicine-medal-parent-pin-v1';
+  const PARENT_PIN_LOCK_KEY = 'medicine-medal-parent-pin-lock-v1';
+  const DEFAULT_GAME_DAYS = [0]; // 0=日, 1=月 ... 6=土
 
-  const state = { currentSelectedMedId: null, medList: [], currentGameId: null };
+  const state = { currentSelectedMedId: null, medList: [], currentGameId: null, parentSettingsAuthorized:false, pinMode:'verify', pinAfter:null };
   const $ = id => document.getElementById(id);
 
   // Production shell must never inherit prototype Sunday overrides.
@@ -20,14 +24,14 @@
 
   document.addEventListener('DOMContentLoaded', init);
   window.addEventListener('storage', e => {
-    if ([WALLET_KEY, ADHERENCE_KEY].includes(e.key)) refreshRewardUI();
+    if ([WALLET_KEY, ADHERENCE_KEY, PARENT_SETTINGS_KEY].includes(e.key)) refreshRewardUI();
   });
   window.addEventListener('pageshow', refreshRewardUI);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshRewardUI(); });
   window.addEventListener('online', updateNetworkUI);
   window.addEventListener('offline', updateNetworkUI);
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.6', { updateViaCache: 'none' }).catch(() => {}));
   }
 
   async function init() {
@@ -48,16 +52,22 @@
 
   function bindStaticEvents() {
     document.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
-    $('open-parent-settings').addEventListener('click', renderNfcSetup);
+    $('open-parent-settings').addEventListener('click', requestParentSettingsAccess);
     $('open-arcade-btn').addEventListener('click', openArcade);
     $('complete-arcade-btn').addEventListener('click', openArcade);
     $('complete-back-btn').addEventListener('click', goTask);
     $('close-game-btn').addEventListener('click', closeGame);
     $('error-retry-btn').addEventListener('click', () => location.reload());
     $('camera-input').addEventListener('change', onCameraChange);
+    $('save-game-day').addEventListener('click', saveGameDaySetting);
+    $('change-parent-pin').addEventListener('click', () => openPinModal('setup', 'change'));
+    $('pin-form').addEventListener('submit', onPinSubmit);
+    document.querySelectorAll('[data-pin-cancel]').forEach(el => el.addEventListener('click', closePinModal));
   }
 
   function switchView(viewId) {
+    const leavingParentSettings = $('nfc-setup-view')?.classList.contains('active-view') && viewId !== 'nfc-setup-view';
+    if (leavingParentSettings) state.parentSettingsAuthorized = false;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
     const target = $(viewId);
     if (target) target.classList.add('active-view');
@@ -208,7 +218,20 @@
     }
   }
 
-  function renderNfcSetup() {
+  async function requestParentSettingsAccess() {
+    if (state.parentSettingsAuthorized) { renderParentSettings(); return; }
+    if (!getStoredPin()) openPinModal('setup', 'open');
+    else openPinModal('verify', 'open');
+  }
+
+  function renderParentSettings() {
+    if (!state.parentSettingsAuthorized) return;
+    renderGameDaySetting();
+    renderNfcSetupList();
+    switchView('nfc-setup-view');
+  }
+
+  function renderNfcSetupList() {
     const container = $('nfc-url-container');
     container.innerHTML = '';
     const baseUrl = location.origin + location.pathname;
@@ -230,7 +253,175 @@
       card.append(h, input, btn);
       container.appendChild(card);
     });
-    switchView('nfc-setup-view');
+  }
+
+  function normalizeGameDays(value, legacyDay) {
+    const source = Array.isArray(value) ? value : (Number.isInteger(Number(legacyDay)) ? [Number(legacyDay)] : DEFAULT_GAME_DAYS);
+    const days = [...new Set(source.map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))];
+    return days.length ? days : [...DEFAULT_GAME_DAYS];
+  }
+
+  function getParentSettings() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(PARENT_SETTINGS_KEY) || '{}');
+      return { ...raw, gameDays:normalizeGameDays(raw.gameDays, raw.gameDay) };
+    } catch (_) { return { gameDays:[...DEFAULT_GAME_DAYS] }; }
+  }
+
+  function renderGameDaySetting() {
+    const settings = getParentSettings();
+    document.querySelectorAll('#game-day-checkboxes input[type="checkbox"]').forEach(input => {
+      input.checked = settings.gameDays.includes(Number(input.value));
+    });
+    const current = $('current-game-days');
+    if (current) current.textContent = gameDaysText(settings.gameDays, false);
+    const help = $('game-day-help');
+    if (help) help.textContent = `ゲームの日：${gameDaysText(settings.gameDays)}。選んだ曜日のうち、直近7日間すべて服薬記録がある日に遊べます。`;
+    const error = $('game-day-error');
+    if (error) error.textContent = '';
+  }
+
+  function saveGameDaySetting() {
+    if (!state.parentSettingsAuthorized) return requestParentSettingsAccess();
+    const days = [...document.querySelectorAll('#game-day-checkboxes input[type="checkbox"]:checked')].map(input => Number(input.value));
+    const error = $('game-day-error');
+    if (!days.length) {
+      if (error) error.textContent = 'ゲームの日を1つ以上選んでください。';
+      return;
+    }
+    const current = getParentSettings();
+    const next = { ...current, gameDays:normalizeGameDays(days) };
+    delete next.gameDay;
+    localStorage.setItem(PARENT_SETTINGS_KEY, JSON.stringify(next));
+    renderGameDaySetting();
+    refreshRewardUI();
+    showToast(`ゲームの日を「${gameDaysText(next.gameDays, false)}」に変更しました`);
+  }
+
+  function gameDayName(day) {
+    return ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'][day] || '日曜日';
+  }
+
+  function gameDaysText(days=getParentSettings().gameDays, long=true) {
+    const order=[1,2,3,4,5,6,0];
+    const selected=new Set(days);
+    return order.filter(d=>selected.has(d)).map(d=>long?gameDayName(d):['日','月','火','水','木','金','土'][d]).join('・');
+  }
+
+  function nextGameDayName() {
+    const todayDay=dayOfWeek(currentDateKey());
+    const days=getParentSettings().gameDays;
+    let best=null;
+    for(const d of days){const delta=(d-todayDay+7)%7||7;if(best===null||delta<best.delta)best={day:d,delta};}
+    return best?gameDayName(best.day):'日曜日';
+  }
+
+  function getStoredPin() {
+    try { return JSON.parse(localStorage.getItem(PARENT_PIN_KEY) || 'null'); } catch (_) { return null; }
+  }
+
+  function openPinModal(mode='verify', after='open') {
+    state.pinMode = mode;
+    state.pinAfter = after;
+    const modal = $('parent-pin-modal');
+    const isSetup = mode === 'setup';
+    $('pin-modal-title').textContent = isSetup ? (after === 'change' ? 'PINを変更' : 'はじめにPINを決める') : 'おうちのかた用PIN';
+    $('pin-modal-copy').textContent = isSetup
+      ? '子どもが設定を変更できないように、4桁の数字を決めてください。'
+      : '設定を開くには、4桁のPINを入力してください。';
+    $('pin-confirm-wrap').hidden = !isSetup;
+    $('pin-submit').textContent = isSetup ? 'PINを保存' : '設定を開く';
+    $('pin-input').value = '';
+    $('pin-confirm-input').value = '';
+    $('pin-error').textContent = '';
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    setTimeout(() => $('pin-input').focus(), 50);
+  }
+
+  function closePinModal() {
+    $('parent-pin-modal').hidden = true;
+    document.body.classList.remove('modal-open');
+    $('pin-error').textContent = '';
+  }
+
+  async function onPinSubmit(e) {
+    e.preventDefault();
+    const pin = $('pin-input').value.trim();
+    const confirm = $('pin-confirm-input').value.trim();
+    const error = $('pin-error');
+    if (!/^\d{4}$/.test(pin)) { error.textContent = '4桁の数字を入力してください。'; return; }
+
+    const lock = getPinLock();
+    if (state.pinMode === 'verify' && lock.lockedUntil > Date.now()) {
+      const sec = Math.ceil((lock.lockedUntil - Date.now()) / 1000);
+      error.textContent = `入力を続けるには${sec}秒待ってください。`;
+      return;
+    }
+
+    if (state.pinMode === 'setup') {
+      if (pin !== confirm) { error.textContent = '2回のPINが一致しません。'; return; }
+      await storePin(pin);
+      localStorage.removeItem(PARENT_PIN_LOCK_KEY);
+      closePinModal();
+      showToast(state.pinAfter === 'change' ? 'PINを変更しました' : 'PINを設定しました');
+      if (state.pinAfter === 'open') { state.parentSettingsAuthorized = true; renderParentSettings(); }
+      return;
+    }
+
+    const ok = await verifyPin(pin);
+    if (!ok) {
+      const result = registerPinFailure();
+      error.textContent = result.locked ? '5回間違えたため、1分間ロックしました。' : `PINが違います。あと${5-result.failCount}回で一時ロックします。`;
+      $('pin-input').select();
+      return;
+    }
+    localStorage.removeItem(PARENT_PIN_LOCK_KEY);
+    state.parentSettingsAuthorized = true;
+    closePinModal();
+    renderParentSettings();
+  }
+
+  function getPinLock() {
+    try {
+      const v = JSON.parse(localStorage.getItem(PARENT_PIN_LOCK_KEY) || '{}');
+      return { failCount:Number(v.failCount)||0, lockedUntil:Number(v.lockedUntil)||0 };
+    } catch (_) { return { failCount:0, lockedUntil:0 }; }
+  }
+
+  function registerPinFailure() {
+    const current = getPinLock();
+    let failCount = current.lockedUntil > Date.now() ? current.failCount : current.failCount + 1;
+    let lockedUntil = current.lockedUntil > Date.now() ? current.lockedUntil : 0;
+    let locked = false;
+    if (failCount >= 5) { failCount = 0; lockedUntil = Date.now() + 60000; locked = true; }
+    localStorage.setItem(PARENT_PIN_LOCK_KEY, JSON.stringify({ failCount, lockedUntil }));
+    return { failCount, lockedUntil, locked };
+  }
+
+  async function storePin(pin) {
+    const saltBytes = new Uint8Array(16);
+    crypto.getRandomValues(saltBytes);
+    const salt = Array.from(saltBytes, b => b.toString(16).padStart(2,'0')).join('');
+    const hash = await hashPin(pin, salt);
+    localStorage.setItem(PARENT_PIN_KEY, JSON.stringify({ salt, hash, version:1 }));
+  }
+
+  async function verifyPin(pin) {
+    const saved = getStoredPin();
+    if (!saved?.salt || !saved?.hash) return false;
+    return (await hashPin(pin, saved.salt)) === saved.hash;
+  }
+
+  async function hashPin(pin, salt) {
+    const bytes = new TextEncoder().encode(`${salt}:${pin}`);
+    if (crypto.subtle) {
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2,'0')).join('');
+    }
+    let h = 2166136261;
+    for (const b of bytes) { h ^= b; h = Math.imul(h, 16777619); }
+    return (h >>> 0).toString(16).padStart(8,'0');
   }
 
   async function copyText(input) {
@@ -305,11 +496,11 @@
     const status = $('complete-arcade-status');
     const arcadeBtn = $('complete-arcade-btn');
     if (reward.unlocked) {
-      status.textContent = `今週7日達成！ 今日はゲームの日。メダルは ${reward.wallet}枚あります。`;
+      status.textContent = `7日達成！ 今日はゲームの日。メダルは ${reward.wallet}枚あります。`;
       arcadeBtn.hidden = false;
     } else {
       const count = weekDoneCount();
-      status.textContent = `今週は ${count}/7日。メダルはゲームの日まで大切にたまります。`;
+      status.textContent = `直近7日間は ${count}/7日。ゲームの日は ${gameDaysText()} です。`;
       arcadeBtn.hidden = true;
     }
     switchView('complete-view');
@@ -347,10 +538,10 @@
     }
   }
 
-  function isArcadeUnlocked() { return isSunday() && weekComplete(); }
+  function isArcadeUnlocked() { return isGameDay() && weekComplete(); }
   function weekComplete() { const d = getAdherence().doneDates; return weekKeys().every(k => !!d[k]); }
   function weekDoneCount() { const d = getAdherence().doneDates; return weekKeys().filter(k => !!d[k]).length; }
-  function isSunday() { return dayOfWeek(currentDateKey()) === 0; }
+  function isGameDay() { return getParentSettings().gameDays.includes(dayOfWeek(currentDateKey())); }
 
   function refreshRewardUI() {
     const wallet = getWallet();
@@ -364,22 +555,22 @@
 
   function renderMiniWeek(container) {
     if (!container) return;
-    const names=['月','火','水','木','金','土','日'];
+    const names=['日','月','火','水','木','金','土'];
     const keys=weekKeys(), today=currentDateKey(), done=getAdherence().doneDates;
     container.innerHTML='';
     keys.forEach((k,i) => {
       const d=document.createElement('div');
       d.className='mini-day'+(done[k]?' done':'')+(k===today?' today':'');
-      d.innerHTML=`${names[i]}<div class="mini-dot">${done[k]?'✓':'・'}</div>`;
+      d.innerHTML=`${names[dayOfWeek(k)]}<div class="mini-dot">${done[k]?'✓':'・'}</div>`;
       container.appendChild(d);
     });
   }
 
   function accessStatusText() {
     const count=weekDoneCount(), wallet=getWallet();
-    if (isArcadeUnlocked()) return `今週7日達成。今日は ${wallet}枚のメダルで遊べます。`;
-    if (isSunday()) return `今週 ${count}/7日。7日そろうと今日アーケードが開きます。`;
-    return `今週 ${count}/7日。メダルは次のゲームの日までたまります。`;
+    if (isArcadeUnlocked()) return `7日連続達成。今日はゲームの日。${wallet}枚のメダルで遊べます。`;
+    if (isGameDay()) return `直近7日間は ${count}/7日。7日そろうと今日アーケードが開きます。`;
+    return `直近7日間は ${count}/7日。ゲームの日：${gameDaysText()}。次は${nextGameDayName()}です。`;
   }
 
   function renderAccessBadges() {
@@ -398,6 +589,8 @@
     refreshWalletOnly();
     renderMiniWeek($('arcade-week-progress'));
     $('arcade-access-status').textContent = accessStatusText();
+    const arcadeNote=$('arcade-note');
+    if (arcadeNote) arcadeNote.textContent=`メダルは使わなければ消えません。ゲームの日は ${gameDaysText()}。選んだ曜日のうち、直近7日間の記録がそろった日に遊べます。`;
     renderAccessBadges();
     const root=$('game-grid');
     root.innerHTML='';
@@ -460,7 +653,7 @@
     if (!game) return;
     state.currentGameId=gameId;
     $('game-frame-title').textContent=game.title;
-    $('game-frame').src=`${game.path}?embed=1`;
+    $('game-frame').src=`${game.path}?embed=1&v=1.5.1`;
     refreshWalletOnly();
     switchView('arcade-game-view');
   }
@@ -483,7 +676,7 @@
     const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
     return `${p.year}-${p.month}-${p.day}`;
   }
-  function weekKeys(){const s=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(s,i));}
+  function weekKeys(){const today=currentDateKey(),start=addDaysKey(today,-6);return Array.from({length:7},(_,i)=>addDaysKey(start,i));}
   function weekStartKey(k){const d=parseKey(k),off=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-off);return keyFromDate(d);}
   function addDaysKey(k,n){const d=parseKey(k);d.setUTCDate(d.getUTCDate()+n);return keyFromDate(d);}
   function dayOfWeek(k){return parseKey(k).getUTCDay();}

@@ -100,12 +100,12 @@ html.embed .gameScreen{max-height:none!important}
 <body>
 <div id="app">
 <header class="topbar">
-  <div class="title">MEDAL ARCADE<span class="subtitle">SUNDAY GAME DAY</span></div>
+  <div class="title">MEDAL ARCADE<span class="subtitle">GAME DAY</span></div>
   <div class="wallet" id="wallet"><div class="coinMini">M</div><b id="medalCount">0</b><span>まい</span></div>
 </header>
 
 <section class="weekCard">
-  <div class="weekHead"><div><strong>こんしゅうの おくすり</strong><small>7日つづけると、日曜日だけゲーム解放</small></div><span class="badge" id="badge">LOCKED</span></div>
+  <div class="weekHead"><div><strong>7にちの おくすり</strong><small>7日つづけると、選んだゲームの日だけ解放</small></div><span class="badge" id="badge">LOCKED</span></div>
   <div class="weekDays" id="weekDays"></div><div class="weekStatus" id="weekStatus"></div>
 </section>
 
@@ -163,7 +163,7 @@ html.embed .gameScreen{max-height:none!important}
   <div class="toggles"><button class="iconBtn" id="soundBtn" aria-pressed="true">♪</button><button class="iconBtn" id="vibeBtn" aria-pressed="true">⌁</button></div>
   <button class="testBtn" id="testMedalBtn">試作：今日の服薬完了 +1</button>
 </div>
-<div class="utility"><button class="testBtn" id="testWeekBtn">試作：今週7日達成</button><button class="testBtn" id="testSundayBtn">試作：日曜として確認</button></div>
+<div class="utility"><button class="testBtn" id="testWeekBtn">試作：7日達成</button><button class="testBtn" id="testSundayBtn">試作：ゲームの日として確認</button></div>
 <p class="noteText">目標は3〜19秒の整数からランダム。直前と同じ秒数は避けます。</p>
 <div class="coinFly" id="coinFly">M</div>
 </div>
@@ -178,6 +178,7 @@ const ADHERENCE='medicine-medal-weekly-adherence-v1';
 const DEBUG='medicine-medal-arcade-debug-v1';
 const LAST_TARGET='medicine-medal-stopwatch-last-target-v1';
 const TZ='Asia/Tokyo';
+const PARENT_SETTINGS='medicine-medal-parent-settings-v1';
 
 const $=id=>document.getElementById(id);
 const medalCount=$('medalCount'),walletEl=$('wallet'),weekDays=$('weekDays'),weekStatus=$('weekStatus'),badge=$('badge');
@@ -224,7 +225,7 @@ function enableTrial(){
 
 function insertMedal(){
   if(state!=='idle'&&state!=='over')return;
-  if(!isUnlocked()){setMessage('まだ遊べません','1週間つづけた日曜日に解放されます');return}
+  if(!isUnlocked()){setMessage('まだ遊べません','1週間つづけたゲームの日に解放されます');return}
   if(wallet<1){setMessage('メダルがありません','服薬できた日に1枚たまります');return}
 
   state='inserting';playBtn.disabled=true;
@@ -387,12 +388,12 @@ function renderAll(){renderWallet();renderWeek();renderAccess()}
 function renderWallet(){medalCount.textContent=wallet}
 
 function renderWeek(){
-  const keys=weekKeys(),names=['月','火','水','木','金','土','日'];
+  const keys=weekKeys(),names=['日','月','火','水','木','金','土'];
   weekDays.innerHTML='';
   keys.forEach((k,i)=>{
     const d=document.createElement('div');
     d.className='dayCell'+(adherence.doneDates[k]?' done':'');
-    d.innerHTML=`${names[i]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;
+    d.innerHTML=`${names[dayOfWeek(k)]}<div class="dayDot">${adherence.doneDates[k]?'M':'・'}</div>`;
     weekDays.appendChild(d)
   });
   const count=keys.filter(k=>adherence.doneDates[k]).length;
@@ -401,9 +402,9 @@ function renderWeek(){
     weekStatus.innerHTML=`🎮 <b>今日はゲームの日！</b> ${wallet}枚使えます。`
   }else{
     badge.textContent='LOCKED';badge.classList.remove('open');
-    weekStatus.innerHTML=`🔒 今週は ${count}/7日。メダルは7日つづけた日曜日に使えます。`
+    weekStatus.innerHTML=`🔒 この7日間は ${count}/7日。メダルは7日つづけたゲームの日に使えます。`
   }
-  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：日曜として確認'
+  testSundayBtn.textContent=debug.sunday?'試作：実際の曜日に戻す':'試作：ゲームの日として確認'
 }
 
 function renderAccess(){
@@ -411,8 +412,8 @@ function renderAccess(){
   playBtn.disabled=!ok;
 
   if(['inserting','ready','running'].includes(state)){playBtn.disabled=true;return}
-  if(!isSunday())playBtn.textContent='🔒 日曜日に解放';
-  else if(!weekComplete())playBtn.textContent='🔒 今週7日達成で解放';
+  if(!isGameDay())playBtn.textContent='🔒 ゲームの日に解放';
+  else if(!weekComplete())playBtn.textContent='🔒 7日達成で解放';
   else if(wallet<1)playBtn.textContent='メダルがありません';
   else playBtn.textContent='🪙 メダルを入れてスタート'
 }
@@ -422,12 +423,11 @@ function renderSettings(){
   vibeBtn.setAttribute('aria-pressed',String(settings.vibe))
 }
 
-function isUnlocked(){return isSunday()&&weekComplete()}
+function getGameDays(){try{const raw=JSON.parse(localStorage.getItem(PARENT_SETTINGS)||'{}');const src=Array.isArray(raw.gameDays)?raw.gameDays:(Number.isInteger(Number(raw.gameDay))?[Number(raw.gameDay)]:[0]);const days=[...new Set(src.map(Number).filter(d=>Number.isInteger(d)&&d>=0&&d<=6))];return days.length?days:[0]}catch(_){return[0]}}
+function isUnlocked(){return isGameDay()&&weekComplete()}
 function weekComplete(){return weekKeys().every(k=>!!adherence.doneDates[k])}
-function isSunday(){return dayOfWeek(currentDateKey())===0}
-function weekKeys(){const s=weekStartKey(currentDateKey());return Array.from({length:7},(_,i)=>addDaysKey(s,i))}
-function currentDateKey(){const real=todayJstKey();return debug.sunday?addDaysKey(weekStartKey(real),6):real}
-function todayJstKey(){
+function isGameDay(){return getGameDays().includes(dayOfWeek(currentDateKey()))}
+function weekKeys(){const today=currentDateKey(),start=addDaysKey(today,-6);return Array.from({length:7},(_,i)=>addDaysKey(start,i))}function currentDateKey(){const real=todayJstKey();if(!debug.sunday)return real;const cur=dayOfWeek(real),delta=Math.min(...getGameDays().map(d=>(d-cur+7)%7));return addDaysKey(real,delta)}function todayJstKey(){
   const ps=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
   const p=Object.fromEntries(ps.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
   return `${p.year}-${p.month}-${p.day}`

@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おくすりメダル＋">
   <title>おくすりメダル＋</title>
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="manifest" href="manifest.webmanifest?v=1.5.1">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=1.5.1">
 </head>
 <body>
   <div id="network-banner" class="network-banner" hidden>オフラインです。服薬記録の送信には通信が必要です。</div>
@@ -55,7 +55,7 @@
         <div class="arcade-summary-head">
           <div>
             <p class="section-kicker">MEDAL ARCADE</p>
-            <h2 id="arcade-summary-title">今週のメダル</h2>
+            <h2 id="arcade-summary-title">メダルと7日間の記録</h2>
           </div>
           <div class="wallet-pill" aria-label="メダル残高">
             <span class="medal-icon" aria-hidden="true">M</span>
@@ -83,7 +83,36 @@
     </header>
     <section class="settings-card app-info-card" aria-label="アプリ情報">
       <img src="assets/brand/icon-64.png" alt="" width="64" height="64">
-      <div><strong>おくすりメダル＋</strong><small>Version 1.4</small></div>
+      <div><strong>おくすりメダル＋</strong><small>Version 1.6</small></div>
+    </section>
+    <section class="settings-card">
+      <div class="settings-heading-row">
+        <div><p class="section-kicker">GAME DAY</p><h2>ゲームの日</h2></div>
+        <span class="settings-lock-badge">PIN保護</span>
+      </div>
+      <p>ゲームをできる曜日を選んでください。複数の曜日を選べます。</p>
+      <fieldset class="weekday-fieldset">
+        <legend class="settings-label">ゲームができる曜日（複数選択可）</legend>
+        <div class="weekday-check-grid" id="game-day-checkboxes">
+          <label class="weekday-check"><input type="checkbox" value="1"><span>月</span></label>
+          <label class="weekday-check"><input type="checkbox" value="2"><span>火</span></label>
+          <label class="weekday-check"><input type="checkbox" value="3"><span>水</span></label>
+          <label class="weekday-check"><input type="checkbox" value="4"><span>木</span></label>
+          <label class="weekday-check"><input type="checkbox" value="5"><span>金</span></label>
+          <label class="weekday-check"><input type="checkbox" value="6"><span>土</span></label>
+          <label class="weekday-check"><input type="checkbox" value="0"><span>日</span></label>
+        </div>
+      </fieldset>
+      <div class="settings-summary"><span>現在の設定</span><strong id="current-game-days">日</strong></div>
+      <p class="settings-help" id="game-day-help">選んだ曜日のうち、直近7日間すべて服薬記録がある日にアーケードが開きます。</p>
+      <p class="settings-error" id="game-day-error" aria-live="polite"></p>
+      <button class="btn btn-arcade settings-save-btn" id="save-game-day" type="button">ゲームの日を保存</button>
+    </section>
+    <section class="settings-card">
+      <h2>保護者PIN</h2>
+      <p>この設定画面は4桁のPINで保護されています。子どもがゲームの日を変更できないようにします。</p>
+      <button class="btn btn-secondary settings-action-btn" id="change-parent-pin" type="button">PINを変更</button>
+      <p class="settings-help">PINはこの端末内だけに保存されます。</p>
     </section>
     <section class="settings-card">
       <h2>NFCタグ URL</h2>
@@ -152,7 +181,7 @@
 
     <section class="arcade-access-card">
       <div class="arcade-access-head">
-        <strong id="arcade-access-title">今週の記録</strong>
+        <strong id="arcade-access-title">ゲームの日までの記録</strong>
         <span class="access-badge dark" id="arcade-access-badge">LOCK</span>
       </div>
       <div id="arcade-week-progress" class="mini-week"></div>
@@ -160,7 +189,7 @@
     </section>
 
     <div id="game-grid" class="game-groups" aria-live="polite"></div>
-    <p class="arcade-note">メダルは使わなければ消えません。ゲームは1週間つづけられた日曜日に遊べます。</p>
+    <p class="arcade-note" id="arcade-note">メダルは使わなければ消えません。ゲームの日は、おうちのかたが設定できます。</p>
   </div>
 
   <div id="arcade-game-view" class="view game-frame-page">
@@ -185,9 +214,30 @@
     </div>
   </div>
 
+
+  <div id="parent-pin-modal" class="pin-modal" hidden>
+    <div class="pin-backdrop" data-pin-cancel></div>
+    <section class="pin-sheet" role="dialog" aria-modal="true" aria-labelledby="pin-modal-title">
+      <button class="pin-close" type="button" data-pin-cancel aria-label="閉じる">×</button>
+      <p class="section-kicker">PARENT ONLY</p>
+      <h2 id="pin-modal-title">おうちのかた用PIN</h2>
+      <p id="pin-modal-copy" class="pin-copy"></p>
+      <form id="pin-form" novalidate>
+        <label class="settings-label" for="pin-input">4桁のPIN</label>
+        <input id="pin-input" class="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-describedby="pin-error">
+        <div id="pin-confirm-wrap" hidden>
+          <label class="settings-label" for="pin-confirm-input">もう一度入力</label>
+          <input id="pin-confirm-input" class="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off">
+        </div>
+        <p id="pin-error" class="pin-error" role="alert"></p>
+        <button class="btn btn-arcade pin-submit" id="pin-submit" type="submit">確認</button>
+      </form>
+    </section>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="games/manifest.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=1.5.1"></script>
 </body>
 </html>

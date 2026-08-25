@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okusuri-medal-plus-v1.4';
+const CACHE_NAME = 'okusuri-medal-plus-v1.6';
 const CORE = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest',
   './assets/brand/logo.png', './assets/brand/icon-64.png', './assets/brand/icon-192.png',
@@ -20,14 +20,26 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).then(res => {
-      const copy = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, copy)); return res;
-    }).catch(() => caches.match(req).then(r => r || caches.match('./index.html'))));
+
+  const isCode = req.mode === 'navigate' || /\.(?:html|js|css|webmanifest)$/.test(url.pathname);
+  if (isCode) {
+    event.respondWith(
+      fetch(req, { cache: 'no-store' }).then(res => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(req, copy));
+        }
+        return res;
+      }).catch(() => caches.match(req).then(r => r || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)))
+    );
     return;
   }
+
   event.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
-    if (res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, copy)); }
+    if (res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE_NAME).then(c => c.put(req, copy));
+    }
     return res;
   })));
 });
