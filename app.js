@@ -31,7 +31,7 @@
   window.addEventListener('online', updateNetworkUI);
   window.addEventListener('offline', updateNetworkUI);
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.6', { updateViaCache: 'none' }).catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.7', { updateViaCache: 'none' }).catch(() => {}));
   }
 
   async function init() {
@@ -61,6 +61,7 @@
     $('camera-input').addEventListener('change', onCameraChange);
     $('save-game-day').addEventListener('click', saveGameDaySetting);
     $('change-parent-pin').addEventListener('click', () => openPinModal('setup', 'change'));
+    $('today-correction-list').addEventListener('click', onTodayCorrectionClick);
     $('pin-form').addEventListener('submit', onPinSubmit);
     document.querySelectorAll('[data-pin-cancel]').forEach(el => el.addEventListener('click', closePinModal));
   }
@@ -227,6 +228,7 @@
   function renderParentSettings() {
     if (!state.parentSettingsAuthorized) return;
     renderGameDaySetting();
+    renderTodayCorrections();
     renderNfcSetupList();
     switchView('nfc-setup-view');
   }
@@ -253,6 +255,106 @@
       card.append(h, input, btn);
       container.appendChild(card);
     });
+  }
+
+  function renderTodayCorrections() {
+    const container = $('today-correction-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const records = state.medList
+      .map(med => ({ med, count:getMedicineCount(med.id) }))
+      .filter(item => item.count > 0);
+
+    if (!records.length) {
+      const empty = document.createElement('p');
+      empty.className = 'correction-empty';
+      empty.textContent = '今日、取り消せる服薬記録はありません。';
+      container.appendChild(empty);
+      return;
+    }
+
+    records.forEach(({med, count}) => {
+      const row = document.createElement('div');
+      row.className = 'correction-row';
+      const text = document.createElement('div');
+      text.className = 'correction-row-text';
+      const title = document.createElement('strong');
+      title.textContent = med.title;
+      const meta = document.createElement('small');
+      meta.textContent = `今日の記録 ${count}回`;
+      text.append(title, meta);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'correction-cancel-btn';
+      btn.dataset.cancelMedId = String(med.id);
+      btn.textContent = '1回取り消す';
+      btn.setAttribute('aria-label', `${med.title}の今日の記録を1回取り消す`);
+      row.append(text, btn);
+      container.appendChild(row);
+    });
+  }
+
+  function onTodayCorrectionClick(e) {
+    const btn = e.target.closest('[data-cancel-med-id]');
+    if (!btn) return;
+    cancelTodayMedicationRecord(btn.dataset.cancelMedId);
+  }
+
+  function cancelTodayMedicationRecord(medId) {
+    if (!state.parentSettingsAuthorized) return requestParentSettingsAccess();
+    const med = state.medList.find(m => String(m.id) === String(medId));
+    if (!med) return;
+    const currentCount = getMedicineCount(medId);
+    if (currentCount <= 0) {
+      renderTodayCorrections();
+      showToast('取り消せる記録がありません');
+      return;
+    }
+
+    const ok = confirm(
+      `今日の「${med.title}」の記録を1回取り消しますか？\n\n` +
+      '・この端末の今日の記録回数を1回減らします。\n' +
+      '・未使用のメダルがあれば1枚取り消します。\n' +
+      '・Google Driveへ送信済みの写真とスプレッドシートの記録は自動では削除されません。'
+    );
+    if (!ok) return;
+
+    setMedicineCount(medId, currentCount - 1);
+
+    const wallet = getWallet();
+    if (wallet > 0) localStorage.setItem(WALLET_KEY, String(wallet - 1));
+
+    const adherence = getAdherence();
+    const today = currentDateKey();
+    if (totalMedicineRecordsForDate(today) === 0) delete adherence.doneDates[today];
+    localStorage.setItem(ADHERENCE_KEY, JSON.stringify(adherence));
+
+    writeCorrectionLog({
+      date:today,
+      medId:String(med.id),
+      medTitle:String(med.title || ''),
+      action:'cancel_one_local_record',
+      walletBefore:wallet,
+      walletAfter:getWallet(),
+      at:new Date().toISOString()
+    });
+
+    renderMedicationList();
+    renderTodayCorrections();
+    refreshRewardUI();
+    showToast(`${med.title}の記録を1回取り消しました`);
+  }
+
+  function writeCorrectionLog(entry) {
+    const key = 'medicine-medal-correction-log-v1';
+    try {
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const next = Array.isArray(list) ? list.slice(-49) : [];
+      next.push(entry);
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch (_) {}
   }
 
   function normalizeGameDays(value, legacyDay) {
@@ -653,7 +755,7 @@
     if (!game) return;
     state.currentGameId=gameId;
     $('game-frame-title').textContent=game.title;
-    $('game-frame').src=`${game.path}?embed=1&v=1.5.1`;
+    $('game-frame').src=`${game.path}?embed=1&v=1.7`;
     refreshWalletOnly();
     switchView('arcade-game-view');
   }
@@ -683,9 +785,11 @@
   function parseKey(k){return new Date(k+'T00:00:00Z');}
   function keyFromDate(d){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;}
 
-  function countKey(medId){return `count_${medId}_${currentDateKey()}`;}
-  function getMedicineCount(medId){const n=parseInt(localStorage.getItem(countKey(medId))||'0',10);return Number.isFinite(n)?n:0;}
-  function incrementMedicineCount(medId){localStorage.setItem(countKey(medId),String(getMedicineCount(medId)+1));}
+  function countKey(medId,dateKey=currentDateKey()){return `count_${medId}_${dateKey}`;}
+  function getMedicineCount(medId,dateKey=currentDateKey()){const n=parseInt(localStorage.getItem(countKey(medId,dateKey))||'0',10);return Number.isFinite(n)?Math.max(0,n):0;}
+  function setMedicineCount(medId,count,dateKey=currentDateKey()){const n=Math.max(0,parseInt(count||'0',10)||0);if(n===0)localStorage.removeItem(countKey(medId,dateKey));else localStorage.setItem(countKey(medId,dateKey),String(n));}
+  function incrementMedicineCount(medId){setMedicineCount(medId,getMedicineCount(medId)+1);}
+  function totalMedicineRecordsForDate(dateKey=currentDateKey()){return state.medList.reduce((sum,med)=>sum+getMedicineCount(med.id,dateKey),0);}
 
   function cleanUrl() {
     if (location.search) history.replaceState({}, '', location.pathname + location.hash);

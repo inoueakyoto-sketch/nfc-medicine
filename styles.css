@@ -223,3 +223,16 @@ body.modal-open{overflow:hidden}
 .weekday-check:has(input:focus-visible){outline:3px solid rgba(49,93,99,.22);outline-offset:2px}
 .settings-error{min-height:1.2em;margin:8px 2px 0!important;color:#a44336!important;font-size:.72rem!important;font-weight:800}
 @media (min-width:520px){.weekday-check-grid{grid-template-columns:repeat(7,minmax(0,1fr))}}
+
+/* v1.7: parent-only correction for today's local medication records */
+.correction-list{display:grid;gap:8px;margin-top:12px}
+.correction-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-soft)}
+.correction-row-text{display:grid;gap:2px;min-width:0}
+.correction-row-text strong{font-size:.9rem;color:#3f3a35;overflow-wrap:anywhere}
+.correction-row-text small{font-size:.7rem;color:#817970}
+.correction-cancel-btn{flex:0 0 auto;min-height:42px;padding:8px 11px;border-radius:11px;border:1px solid #ddb8b3;background:#fff7f6;color:var(--danger);font:inherit;font-size:.74rem;font-weight:950;cursor:pointer}
+.correction-cancel-btn:focus-visible{outline:3px solid rgba(184,81,75,.2);outline-offset:2px}
+.correction-empty{margin:10px 0 0!important;padding:12px;border-radius:13px;background:var(--surface-soft);font-size:.78rem!important;color:#817970!important}
+.correction-warning{margin-top:12px;padding:12px;border-radius:13px;background:#fff6e8;border:1px solid #ead7b8}
+.correction-warning strong{display:block;margin-bottom:3px;font-size:.76rem;color:#7f5a24}
+.correction-warning p{margin:0!important;font-size:.7rem!important;line-height:1.55;color:#76654b!important}

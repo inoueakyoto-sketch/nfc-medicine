@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おくすりメダル＋">
   <title>おくすりメダル＋</title>
-  <link rel="manifest" href="manifest.webmanifest?v=1.5.1">
+  <link rel="manifest" href="manifest.webmanifest?v=1.7">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.5.1">
+  <link rel="stylesheet" href="styles.css?v=1.7">
 </head>
 <body>
   <div id="network-banner" class="network-banner" hidden>オフラインです。服薬記録の送信には通信が必要です。</div>
@@ -83,7 +83,7 @@
     </header>
     <section class="settings-card app-info-card" aria-label="アプリ情報">
       <img src="assets/brand/icon-64.png" alt="" width="64" height="64">
-      <div><strong>おくすりメダル＋</strong><small>Version 1.6</small></div>
+      <div><strong>おくすりメダル＋</strong><small>Version 1.7</small></div>
     </section>
     <section class="settings-card">
       <div class="settings-heading-row">
@@ -107,6 +107,18 @@
       <p class="settings-help" id="game-day-help">選んだ曜日のうち、直近7日間すべて服薬記録がある日にアーケードが開きます。</p>
       <p class="settings-error" id="game-day-error" aria-live="polite"></p>
       <button class="btn btn-arcade settings-save-btn" id="save-game-day" type="button">ゲームの日を保存</button>
+    </section>
+    <section class="settings-card correction-card">
+      <div class="settings-heading-row">
+        <div><p class="section-kicker">TODAY'S RECORD</p><h2>今日の服薬記録を修正</h2></div>
+        <span class="settings-lock-badge">PIN保護</span>
+      </div>
+      <p>間違えて記録した場合だけ、ここから今日の記録を1回ずつ取り消せます。</p>
+      <div id="today-correction-list" class="correction-list" aria-live="polite"></div>
+      <div class="correction-warning">
+        <strong>写真について</strong>
+        <p>ここで取り消すのは、この端末の記録回数・週間記録・未使用メダルです。Google Driveへ送信済みの写真やスプレッドシートの行は自動削除されません。必要な場合は保護者がGoogle Drive／スプレッドシート側で確認・削除してください。</p>
+      </div>
     </section>
     <section class="settings-card">
       <h2>保護者PIN</h2>
@@ -238,6 +250,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="games/manifest.js"></script>
-  <script src="app.js?v=1.5.1"></script>
+  <script src="app.js?v=1.7"></script>
 </body>
 </html>
