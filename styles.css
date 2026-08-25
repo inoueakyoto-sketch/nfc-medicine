@@ -111,6 +111,14 @@ p{line-height:1.6;color:var(--muted)}
 .mini-day.done .mini-dot{background:var(--green-soft);border-color:#c9ded2;color:var(--green)}
 .mini-day.today{color:var(--accent-dark)}
 .mini-day.today .mini-dot{box-shadow:0 0 0 2px rgba(217,119,63,.18)}
+.mini-day-name{display:inline-flex;align-items:center;justify-content:center;gap:2px;white-space:nowrap}
+.game-day-mark{color:#c99428;font-size:.62rem;line-height:1;transform:translateY(-1px)}
+.mini-day.game-day{color:#9a6c18}
+.mini-day.game-day .mini-dot{border-color:#d9b85c;background:#fbf3d5;box-shadow:inset 0 0 0 1px rgba(201,148,40,.10)}
+.mini-day.game-day.done .mini-dot{background:var(--green-soft);border-color:#d9b85c;color:var(--green);box-shadow:inset 0 0 0 1px rgba(201,148,40,.12)}
+.mini-day.game-day.today .mini-dot{box-shadow:0 0 0 2px rgba(201,148,40,.24),inset 0 0 0 1px rgba(201,148,40,.12)}
+.mini-week-legend{margin:7px 0 0;text-align:right;color:#8f7b54;font-size:.64rem;font-weight:850}
+.mini-week-legend span{color:#c99428}
 .mini-week.light .mini-day{color:#746f67}
 
 /* Settings */

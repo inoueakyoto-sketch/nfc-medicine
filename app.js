@@ -31,7 +31,7 @@
   window.addEventListener('online', updateNetworkUI);
   window.addEventListener('offline', updateNetworkUI);
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.7', { updateViaCache: 'none' }).catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.8', { updateViaCache: 'none' }).catch(() => {}));
   }
 
   async function init() {
@@ -378,7 +378,7 @@
     const current = $('current-game-days');
     if (current) current.textContent = gameDaysText(settings.gameDays, false);
     const help = $('game-day-help');
-    if (help) help.textContent = `ゲームの日：${gameDaysText(settings.gameDays)}。選んだ曜日のうち、直近7日間すべて服薬記録がある日に遊べます。`;
+    if (help) help.textContent = `ゲームの日：${gameDaysText(settings.gameDays)}。チェックした曜日はアーケードが開きます。服薬でためたメダルを使って遊べます。`;
     const error = $('game-day-error');
     if (error) error.textContent = '';
   }
@@ -598,11 +598,11 @@
     const status = $('complete-arcade-status');
     const arcadeBtn = $('complete-arcade-btn');
     if (reward.unlocked) {
-      status.textContent = `7日達成！ 今日はゲームの日。メダルは ${reward.wallet}枚あります。`;
+      status.textContent = `今日はゲームの日！ メダルは ${reward.wallet}枚あります。`;
       arcadeBtn.hidden = false;
     } else {
       const count = weekDoneCount();
-      status.textContent = `直近7日間は ${count}/7日。ゲームの日は ${gameDaysText()} です。`;
+      status.textContent = `直近7日間は ${count}/7日。ゲームの日は ${gameDaysText()} です。次のゲームの日まで記録を続けよう。`;
       arcadeBtn.hidden = true;
     }
     switchView('complete-view');
@@ -640,7 +640,7 @@
     }
   }
 
-  function isArcadeUnlocked() { return isGameDay() && weekComplete(); }
+  function isArcadeUnlocked() { return isGameDay(); }
   function weekComplete() { const d = getAdherence().doneDates; return weekKeys().every(k => !!d[k]); }
   function weekDoneCount() { const d = getAdherence().doneDates; return weekKeys().filter(k => !!d[k]).length; }
   function isGameDay() { return getParentSettings().gameDays.includes(dayOfWeek(currentDateKey())); }
@@ -662,17 +662,18 @@
     container.innerHTML='';
     keys.forEach((k,i) => {
       const d=document.createElement('div');
-      d.className='mini-day'+(done[k]?' done':'')+(k===today?' today':'');
-      d.innerHTML=`${names[dayOfWeek(k)]}<div class="mini-dot">${done[k]?'✓':'・'}</div>`;
+      const gameDay=getParentSettings().gameDays.includes(dayOfWeek(k));
+      d.className='mini-day'+(done[k]?' done':'')+(k===today?' today':'')+(gameDay?' game-day':'');
+      d.title=gameDay?'ゲームの日':'';
+      d.innerHTML=`<span class="mini-day-name">${names[dayOfWeek(k)]}${gameDay?'<span class="game-day-mark" aria-hidden="true">★</span>':''}</span><div class="mini-dot">${done[k]?'✓':'・'}</div>`;
       container.appendChild(d);
     });
   }
 
   function accessStatusText() {
     const count=weekDoneCount(), wallet=getWallet();
-    if (isArcadeUnlocked()) return `7日連続達成。今日はゲームの日。${wallet}枚のメダルで遊べます。`;
-    if (isGameDay()) return `直近7日間は ${count}/7日。7日そろうと今日アーケードが開きます。`;
-    return `直近7日間は ${count}/7日。ゲームの日：${gameDaysText()}。次は${nextGameDayName()}です。`;
+    if (isArcadeUnlocked()) return wallet > 0 ? `今日はゲームの日。${wallet}枚のメダルで遊べます。` : '今日はゲームの日。服薬を記録すると、ためたメダルで遊べます。';
+    return `直近7日間は ${count}/7日。★はゲームの日。次は${nextGameDayName()}です。`;
   }
 
   function renderAccessBadges() {
@@ -692,7 +693,7 @@
     renderMiniWeek($('arcade-week-progress'));
     $('arcade-access-status').textContent = accessStatusText();
     const arcadeNote=$('arcade-note');
-    if (arcadeNote) arcadeNote.textContent=`メダルは使わなければ消えません。ゲームの日は ${gameDaysText()}。選んだ曜日のうち、直近7日間の記録がそろった日に遊べます。`;
+    if (arcadeNote) arcadeNote.textContent=`メダルは使わなければ消えません。ゲームの日は ${gameDaysText()}。チェックした曜日はアーケードが開きます。`;
     renderAccessBadges();
     const root=$('game-grid');
     root.innerHTML='';
@@ -755,7 +756,7 @@
     if (!game) return;
     state.currentGameId=gameId;
     $('game-frame-title').textContent=game.title;
-    $('game-frame').src=`${game.path}?embed=1&v=1.7`;
+    $('game-frame').src=`${game.path}?embed=1&v=1.8`;
     refreshWalletOnly();
     switchView('arcade-game-view');
   }

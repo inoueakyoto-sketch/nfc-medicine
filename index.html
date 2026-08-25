@@ -7,15 +7,15 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="theme-color" content="#f5f1e9">
-  <meta name="description" content="服薬を写真で記録してメダルをため、1週間続けられた日にミニゲームを楽しむ服薬サポートアプリ。">
+  <meta name="description" content="服薬を写真で記録してメダルをため、保護者が選んだ曜日にミニゲームを楽しむ服薬サポートアプリ。">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おくすりメダル＋">
   <title>おくすりメダル＋</title>
-  <link rel="manifest" href="manifest.webmanifest?v=1.7">
+  <link rel="manifest" href="manifest.webmanifest?v=1.8">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.7">
+  <link rel="stylesheet" href="styles.css?v=1.8">
 </head>
 <body>
   <div id="network-banner" class="network-banner" hidden>オフラインです。服薬記録の送信には通信が必要です。</div>
@@ -66,7 +66,8 @@
           <span class="access-badge" id="task-access-badge">LOCK</span>
           <p id="task-arcade-status" class="arcade-status"></p>
         </div>
-        <div id="task-week-progress" class="mini-week" aria-label="今週の服薬記録"></div>
+        <div id="task-week-progress" class="mini-week" aria-label="直近7日間の服薬記録。星印はゲームの日"></div>
+        <p class="mini-week-legend"><span>★</span> ゲームの日</p>
         <button class="btn btn-arcade" id="open-arcade-btn" type="button">ゲームを見る</button>
       </section>
 
@@ -83,7 +84,7 @@
     </header>
     <section class="settings-card app-info-card" aria-label="アプリ情報">
       <img src="assets/brand/icon-64.png" alt="" width="64" height="64">
-      <div><strong>おくすりメダル＋</strong><small>Version 1.7</small></div>
+      <div><strong>おくすりメダル＋</strong><small>Version 1.8</small></div>
     </section>
     <section class="settings-card">
       <div class="settings-heading-row">
@@ -104,7 +105,7 @@
         </div>
       </fieldset>
       <div class="settings-summary"><span>現在の設定</span><strong id="current-game-days">日</strong></div>
-      <p class="settings-help" id="game-day-help">選んだ曜日のうち、直近7日間すべて服薬記録がある日にアーケードが開きます。</p>
+      <p class="settings-help" id="game-day-help">チェックした曜日はアーケードが開きます。服薬でためたメダルを使って遊びます。</p>
       <p class="settings-error" id="game-day-error" aria-live="polite"></p>
       <button class="btn btn-arcade settings-save-btn" id="save-game-day" type="button">ゲームの日を保存</button>
     </section>
@@ -250,6 +251,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="games/manifest.js"></script>
-  <script src="app.js?v=1.7"></script>
+  <script src="app.js?v=1.8"></script>
 </body>
 </html>
