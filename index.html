@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おくすりメダル＋">
   <title>おくすりメダル＋</title>
-  <link rel="manifest" href="manifest.webmanifest?v=1.12">
+  <link rel="manifest" href="manifest.webmanifest?v=1.12.1">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.12">
+  <link rel="stylesheet" href="styles.css?v=1.12.1">
 </head>
 <body>
   <div id="network-banner" class="network-banner" hidden>オフラインです。服薬記録の送信には通信が必要です。</div>
@@ -120,7 +120,7 @@
     </header>
     <section class="settings-card app-info-card" aria-label="アプリ情報">
       <img src="assets/brand/icon-64.png" alt="" width="64" height="64">
-      <div><strong>おくすりメダル＋</strong><small>Version 1.12</small></div>
+      <div><strong>おくすりメダル＋</strong><small>Version 1.12.1</small></div>
     </section>
     <section class="settings-card parent-email-card">
       <div class="settings-heading-row">
@@ -155,7 +155,7 @@
         </div>
       </fieldset>
       <div class="settings-summary"><span>現在の設定</span><strong id="current-game-days">日</strong></div>
-      <p class="settings-help" id="game-day-help">チェックした曜日はアーケードが開きます。服薬でためたメダルを使って遊びます。</p>
+      <p class="settings-help" id="game-day-help">メダルは月曜日から日曜日までためられ、毎週月曜日の0:00に0枚へ戻ります。</p>
       <p class="settings-error" id="game-day-error" aria-live="polite"></p>
       <button class="btn btn-arcade settings-save-btn" id="save-game-day" type="button">ゲームの日を保存</button>
     </section>
@@ -220,7 +220,7 @@
       <div class="pending-mail-icon" aria-hidden="true">✉</div>
       <p class="eyebrow dark">WAITING FOR PARENT</p>
       <h1>おうちの人に確認をお願いしました</h1>
-      <p class="complete-message">写真は送信されました。おうちの人が「確認しました」を押すと、メダルが1枚もらえます。</p>
+      <p class="complete-message">写真は送信されました。同じ週の日曜日までに確認されると、メダルが1枚もらえます。月曜日になるとメダルは0枚から始まります。</p>
       <div class="pending-status-box"><span>現在の状態</span><strong id="approval-pending-status">確認待ち</strong></div>
       <button class="btn btn-arcade" id="check-approval-btn" type="button">確認状況をチェック</button>
       <button class="btn btn-secondary" id="pending-back-btn" type="button">今日のおくすりへ戻る</button>
@@ -232,8 +232,8 @@
       <div class="complete-check" aria-hidden="true">✓</div>
       <p class="eyebrow dark">RECORD COMPLETE</p>
       <h1>記録できました</h1>
-      <p class="complete-message">今日のおくすりを記録しました。</p>
-      <div class="reward-row">
+      <p class="complete-message" id="complete-message">今日のおくすりを記録しました。</p>
+      <div class="reward-row" id="complete-reward-row">
         <div class="reward-medal"><span>M</span><b>+1</b></div>
         <div class="reward-copy"><small>GET</small><strong>メダルを1枚ためたよ</strong></div>
       </div>
@@ -264,7 +264,7 @@
     </section>
 
     <div id="game-grid" class="game-groups" aria-live="polite"></div>
-    <p class="arcade-note" id="arcade-note">メダルは使わなければ消えません。ゲームの日は、おうちのかたが設定できます。</p>
+    <p class="arcade-note" id="arcade-note">メダルは月曜日から日曜日までためられ、毎週月曜日の0:00に0枚へ戻ります。ゲームの日は、おうちのかたが設定できます。</p>
   </div>
 
   <div id="arcade-game-view" class="view game-frame-page">
@@ -313,6 +313,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="games/manifest.js"></script>
-  <script src="app.js?v=1.12"></script>
+  <script src="app.js?v=1.12.1"></script>
 </body>
 </html>

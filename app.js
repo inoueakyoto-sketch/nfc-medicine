@@ -4,6 +4,8 @@
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwy1VKCy0ud87bkvtomzsNkLrwJWE8LUI10IssxVPGr2GIgKaB1Xn1m8YDcLngC5xYywA/exec';
   const TZ = 'Asia/Tokyo';
   const WALLET_KEY = 'medicine-medal-arcade-wallet-v2';
+  const WALLET_WEEK_KEY = 'medicine-medal-arcade-wallet-week-v1';
+  const WALLET_WEEK_MIGRATION_WEEK = '2026-09-21';
   const ADHERENCE_KEY = 'medicine-medal-weekly-adherence-v1';
   const DEBUG_KEY = 'medicine-medal-arcade-debug-v1';
   const PARENT_SETTINGS_KEY = 'medicine-medal-parent-settings-v1';
@@ -30,7 +32,7 @@
 
   document.addEventListener('DOMContentLoaded', init);
   window.addEventListener('storage', e => {
-    if ([WALLET_KEY, ADHERENCE_KEY, PARENT_SETTINGS_KEY].includes(e.key)) refreshRewardUI();
+    if ([WALLET_KEY, WALLET_WEEK_KEY, ADHERENCE_KEY, PARENT_SETTINGS_KEY].includes(e.key)) refreshRewardUI();
   });
   window.addEventListener('pageshow', () => {
     refreshRewardUI();
@@ -46,8 +48,11 @@
   });
   window.addEventListener('online', updateNetworkUI);
   window.addEventListener('offline', updateNetworkUI);
+  window.setInterval(() => {
+    if (ensureWeeklyWallet()) refreshRewardUI();
+  }, 30000);
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.12', { updateViaCache: 'none' }).catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.12.1', { updateViaCache: 'none' }).catch(() => {}));
   }
 
   async function init() {
@@ -428,7 +433,7 @@
     const current = $('current-game-days');
     if (current) current.textContent = gameDaysText(settings.gameDays, false);
     const help = $('game-day-help');
-    if (help) help.textContent = `ゲームの日：${gameDaysText(settings.gameDays)}。チェックした曜日はアーケードが開きます。服薬でためたメダルを使って遊べます。`;
+    if (help) help.textContent = `ゲームの日：${gameDaysText(settings.gameDays)}。チェックした曜日はアーケードが開きます。メダルは月曜日から日曜日までためられ、毎週月曜日の0:00に0枚へ戻ります。`;
     const error = $('game-day-error');
     if (error) error.textContent = '';
   }
@@ -690,6 +695,13 @@
     renderMiniWeek($('complete-week-progress'));
     const status = $('complete-arcade-status');
     const arcadeBtn = $('complete-arcade-btn');
+    const message = $('complete-message');
+    const rewardRow = $('complete-reward-row');
+    const medalAdded = reward.medalAdded !== false;
+    if (message) {
+      message.textContent = medalAdded ? '今日のおくすりを記録しました。' : '前週分の服薬記録を確認しました。';
+    }
+    if (rewardRow) rewardRow.hidden = !medalAdded;
     if (reward.unlocked) {
       status.textContent = `今日はゲームの日！ メダルは ${reward.wallet}枚あります。`;
       arcadeBtn.hidden = false;
@@ -935,8 +947,8 @@
 
   async function syncPendingApprovals({ silent=true }={}) {
     const pending=getPendingApprovals();
-    if (!pending.length) return {approved:0,rejected:0};
-    let approved=0,rejected=0;
+    if (!pending.length) return {approved:0,rejected:0,medalsAdded:0};
+    let approved=0,rejected=0,medalsAdded=0;
     const keep=[];
     for (const item of pending) {
       try {
@@ -949,6 +961,7 @@
           if(!getClaimedApprovals().includes(item.requestId)) {
             setMedicineCount(item.medId, getMedicineCount(item.medId, item.date) + 1, item.date);
             const reward=recordMedicationReward(item.date);
+            if (reward.medalAdded) medalsAdded++;
             rememberClaimedApproval(item.requestId);
             approved++;
             fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'markRewarded',deviceId:getDeviceId(),requestId:item.requestId})}).catch(()=>{});
@@ -973,25 +986,62 @@
     renderTodayCorrections();
     refreshRewardUI();
     if(!silent) {
-      if(approved) showToast(`確認されました。メダル +${approved}`);
+      if(approved && medalsAdded) showToast(`確認されました。メダル +${medalsAdded}`);
+      else if(approved) showToast('確認されました。前週分のため今週のメダルには加算されません');
       else if(rejected) showToast('撮り直しになった記録があります');
       else showToast('まだ確認待ちです');
     }
-    return {approved,rejected};
+    return {approved,rejected,medalsAdded};
   }
 
   // ---- Medal / weekly adherence ----
+  function ensureWeeklyWallet() {
+    const currentWeek = weekStartKey(currentDateKey());
+    const storedWeek = localStorage.getItem(WALLET_WEEK_KEY);
+
+    // v1.12.1導入週だけは、現在の残高をその週のメダルとして引き継ぐ。
+    // 導入後、初回起動が翌週以降になった場合は旧残高を持ち越さない。
+    if (!storedWeek) {
+      const shouldReset = currentWeek !== WALLET_WEEK_MIGRATION_WEEK;
+      if (shouldReset) localStorage.setItem(WALLET_KEY, '0');
+      localStorage.setItem(WALLET_WEEK_KEY, currentWeek);
+      return shouldReset;
+    }
+
+    // 月曜日を起点とした週が変わったら、メダルだけ0枚へ戻す。
+    if (storedWeek !== currentWeek) {
+      localStorage.setItem(WALLET_KEY, '0');
+      localStorage.setItem(WALLET_WEEK_KEY, currentWeek);
+      return true;
+    }
+
+    return false;
+  }
+
   function recordMedicationReward(dateKey=currentDateKey()) {
-    const wallet = getWallet() + 1;
-    localStorage.setItem(WALLET_KEY, String(wallet));
+    ensureWeeklyWallet();
+
+    const currentWeek = weekStartKey(currentDateKey());
+    const rewardWeek = weekStartKey(dateKey);
+    let wallet = getWallet();
+    let medalAdded = false;
+
+    // 前週の服薬が翌週に承認されても、今週のメダルには加算しない。
+    if (rewardWeek === currentWeek) {
+      wallet += 1;
+      localStorage.setItem(WALLET_KEY, String(wallet));
+      medalAdded = true;
+    }
+
     const adherence = getAdherence();
     adherence.doneDates[dateKey] = true;
     localStorage.setItem(ADHERENCE_KEY, JSON.stringify(adherence));
     refreshRewardUI();
-    return { wallet, unlocked:isArcadeUnlocked() };
+    return { wallet, unlocked:isArcadeUnlocked(), medalAdded };
   }
 
   function getWallet() {
+    ensureWeeklyWallet();
     const n = parseInt(localStorage.getItem(WALLET_KEY) || '0', 10);
     return Number.isFinite(n) ? Math.max(0, n) : 0;
   }
@@ -1058,7 +1108,7 @@
     renderMiniWeek($('arcade-week-progress'));
     $('arcade-access-status').textContent = accessStatusText();
     const arcadeNote=$('arcade-note');
-    if (arcadeNote) arcadeNote.textContent=`メダルは使わなければ消えません。ゲームの日は ${gameDaysText()}。チェックした曜日はアーケードが開きます。`;
+    if (arcadeNote) arcadeNote.textContent=`メダルは月曜日から日曜日までためられ、毎週月曜日の0:00に0枚へ戻ります。ゲームの日は ${gameDaysText()}。`;
     renderAccessBadges();
     const root=$('game-grid');
     root.innerHTML='';
@@ -1121,7 +1171,7 @@
     if (!game) return;
     state.currentGameId=gameId;
     $('game-frame-title').textContent=game.title;
-    $('game-frame').src=`${game.path}?embed=1&v=1.12`;
+    $('game-frame').src=`${game.path}?embed=1&v=1.12.1`;
     refreshWalletOnly();
     switchView('arcade-game-view');
   }
