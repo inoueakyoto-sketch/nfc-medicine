@@ -1,4 +1,4 @@
-const CACHE_NAME = 'okusuri-medal-plus-v1.8';
+const CACHE_NAME = 'okusuri-medal-plus-v1.12';
 const CORE = [
   './', './index.html', './styles.css', './app.js', './manifest.webmanifest',
   './assets/brand/logo.png', './assets/brand/icon-64.png', './assets/brand/icon-192.png',

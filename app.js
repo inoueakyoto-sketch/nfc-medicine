@@ -9,9 +9,15 @@
   const PARENT_SETTINGS_KEY = 'medicine-medal-parent-settings-v1';
   const PARENT_PIN_KEY = 'medicine-medal-parent-pin-v1';
   const PARENT_PIN_LOCK_KEY = 'medicine-medal-parent-pin-lock-v1';
+  const DEVICE_ID_KEY = 'medicine-medal-device-id-v1';
+  const PARENT_LINK_KEY = 'medicine-medal-parent-link-v1';
+  const PENDING_APPROVALS_KEY = 'medicine-medal-pending-approvals-v1';
+  const CLAIMED_APPROVALS_KEY = 'medicine-medal-claimed-approvals-v1';
+  const MIGRATION_MODE_KEY = 'medicine-medal-parent-approval-mode-v1';
+  const MIGRATION_NOTICE_DISMISSED_KEY = 'medicine-medal-parent-approval-notice-dismissed-v1';
   const DEFAULT_GAME_DAYS = [0]; // 0=日, 1=月 ... 6=土
 
-  const state = { currentSelectedMedId: null, medList: [], currentGameId: null, parentSettingsAuthorized:false, pinMode:'verify', pinAfter:null };
+  const state = { currentSelectedMedId: null, medList: [], currentGameId: null, parentSettingsAuthorized:false, pinMode:'verify', pinAfter:null, parentLink:null, approvalPollTimer:0 };
   const $ = id => document.getElementById(id);
 
   // Production shell must never inherit prototype Sunday overrides.
@@ -26,12 +32,22 @@
   window.addEventListener('storage', e => {
     if ([WALLET_KEY, ADHERENCE_KEY, PARENT_SETTINGS_KEY].includes(e.key)) refreshRewardUI();
   });
-  window.addEventListener('pageshow', refreshRewardUI);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshRewardUI(); });
+  window.addEventListener('pageshow', () => {
+    refreshRewardUI();
+    renderMigrationNotice();
+    refreshParentLinkStatus({ showOnboarding:false }).then(() => syncPendingApprovals({ silent:true })).catch(() => {});
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      refreshRewardUI();
+      renderMigrationNotice();
+      refreshParentLinkStatus({ showOnboarding:false }).then(() => syncPendingApprovals({ silent:true })).catch(() => {});
+    }
+  });
   window.addEventListener('online', updateNetworkUI);
   window.addEventListener('offline', updateNetworkUI);
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.8', { updateViaCache: 'none' }).catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.12', { updateViaCache: 'none' }).catch(() => {}));
   }
 
   async function init() {
@@ -39,15 +55,20 @@
     updateNetworkUI();
     const params = new URLSearchParams(location.search);
     if (params.has('reset')) {
-      localStorage.clear();
-      alert('✅ リセットしました！');
-      location.replace(location.origin + location.pathname);
-      return;
+      // Production migration safety: never erase existing user data from a URL parameter.
+      params.delete('reset');
+      const query = params.toString();
+      history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash || ''}`);
     }
     if (params.has('id')) state.currentSelectedMedId = params.get('id');
     renderTodayLabel();
+    initializeMigrationMode();
+    ensureDeviceId();
     refreshRewardUI();
     await loadMedicationList();
+    await refreshParentLinkStatus({ showOnboarding:isParentSetupRequired() });
+    await syncPendingApprovals({ silent:true });
+    renderMigrationNotice();
   }
 
   function bindStaticEvents() {
@@ -62,6 +83,22 @@
     $('save-game-day').addEventListener('click', saveGameDaySetting);
     $('change-parent-pin').addEventListener('click', () => openPinModal('setup', 'change'));
     $('today-correction-list').addEventListener('click', onTodayCorrectionClick);
+    $('send-parent-verification')?.addEventListener('click', () => sendParentVerification('onboarding'));
+    $('check-parent-verification')?.addEventListener('click', async () => { await refreshParentLinkStatus({ showOnboarding:true, forceToast:true }); });
+    $('change-onboarding-email')?.addEventListener('click', resetOnboardingEmailForm);
+    $('onboarding-later')?.addEventListener('click', () => {
+      localStorage.setItem(MIGRATION_NOTICE_DISMISSED_KEY, '1');
+      switchView('task-view');
+      renderMigrationNotice();
+    });
+    $('migration-start-parent')?.addEventListener('click', () => showParentOnboarding());
+    $('migration-later')?.addEventListener('click', () => {
+      localStorage.setItem(MIGRATION_NOTICE_DISMISSED_KEY, '1');
+      renderMigrationNotice();
+    });
+    $('settings-send-parent-verification')?.addEventListener('click', () => sendParentVerification('settings'));
+    $('check-approval-btn')?.addEventListener('click', async () => { await syncPendingApprovals({ silent:false }); });
+    $('pending-back-btn')?.addEventListener('click', () => switchView('task-view'));
     $('pin-form').addEventListener('submit', onPinSubmit);
     document.querySelectorAll('[data-pin-cancel]').forEach(el => el.addEventListener('click', closePinModal));
   }
@@ -73,7 +110,7 @@
     const target = $(viewId);
     if (target) target.classList.add('active-view');
     window.scrollTo({ top: 0, behavior: 'auto' });
-    if (viewId === 'task-view') { renderMedicationList(); refreshRewardUI(); }
+    if (viewId === 'task-view') { renderMedicationList(); refreshRewardUI(); renderMigrationNotice(); }
     if (viewId === 'arcade-view') renderArcade();
   }
 
@@ -141,12 +178,15 @@
 
     state.medList.forEach(med => {
       const currentCount = getMedicineCount(med.id);
+      const pendingCount = getPendingApprovalCount(med.id);
+      const effectiveCount = currentCount + pendingCount;
       const limitCount = parseInt(med.limitCount || '0', 10);
       const done = limitCount > 0 && currentCount >= limitCount;
+      const waiting = pendingCount > 0;
       recordedTotal += currentCount;
       if (limitCount > 0) {
         hasKnownLimit = true;
-        remainingKnown += Math.max(0, limitCount - currentCount);
+        remainingKnown += Math.max(0, limitCount - effectiveCount);
       }
 
       const card = document.createElement('section');
@@ -171,15 +211,23 @@
       const badge = document.createElement('span');
       badge.className = 'count-badge';
       if (done) badge.textContent = '完了';
+      else if (waiting) badge.textContent = `確認待ち ${pendingCount}`;
       else if (limitCount > 0) badge.textContent = `${currentCount}/${limitCount}回`;
       else badge.textContent = `${currentCount}回記録`;
       head.append(titleWrap, badge);
       card.appendChild(head);
 
-      if (done) {
+      if (waiting && !done) {
+        const pendingNote = document.createElement('p');
+        pendingNote.className = 'med-pending-note';
+        pendingNote.textContent = 'おうちの人の確認を待っています。';
+        card.appendChild(pendingNote);
+      }
+
+      if (done || (limitCount > 0 && effectiveCount >= limitCount)) {
         const doneCopy = document.createElement('p');
         doneCopy.className = 'done-copy';
-        doneCopy.textContent = '今日の予定分を記録しました。';
+        doneCopy.textContent = done ? '今日の予定分を記録しました。' : '確認待ちの記録があります。';
         card.appendChild(doneCopy);
       } else {
         const btn = document.createElement('button');
@@ -227,6 +275,8 @@
 
   function renderParentSettings() {
     if (!state.parentSettingsAuthorized) return;
+    renderParentEmailSetting();
+    refreshParentLinkStatus({ showOnboarding:false });
     renderGameDaySetting();
     renderTodayCorrections();
     renderNfcSetupList();
@@ -538,6 +588,11 @@
   }
 
   function openCameraView(medId, medTitle) {
+    if (isParentSetupRequired() || (usesApprovalFlow() && !isParentVerified())) {
+      state.currentSelectedMedId = medId;
+      showParentOnboarding();
+      return;
+    }
     state.currentSelectedMedId = medId;
     $('target-med-title').textContent = medTitle;
     switchView('camera-view');
@@ -546,22 +601,60 @@
   async function onCameraChange(e) {
     const file = e.target.files[0];
     if (!file) return;
+    if (isParentSetupRequired() || (usesApprovalFlow() && !isParentVerified())) {
+      e.target.value = '';
+      showParentOnboarding();
+      return;
+    }
     switchView('sending-view');
     try {
       const base64Image = await resizeAndConvertImage(file);
-      const payload = { action:'log', id:state.currentSelectedMedId, name:'ユーザー', image:base64Image };
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
+
+      if (!usesApprovalFlow()) {
+        const payload = { action:'log', id:state.currentSelectedMedId, name:'ユーザー', image:base64Image };
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 12000));
+        const fetchPromise = fetch(GAS_URL, {
+          method:'POST', mode:'no-cors', headers:{ 'Content-Type':'text/plain' }, body:JSON.stringify(payload)
+        });
+        await Promise.race([fetchPromise, timeoutPromise]);
+        incrementMedicineCount(state.currentSelectedMedId);
+        const reward = recordMedicationReward();
+        state.currentSelectedMedId = null;
+        cleanUrl();
+        renderMedicationList();
+        showComplete(reward);
+        return;
+      }
+
+      const requestId = makeRequestId();
+      const med = state.medList.find(m => String(m.id) === String(state.currentSelectedMedId));
+      const pendingEntry = {
+        requestId,
+        medId:String(state.currentSelectedMedId),
+        medTitle:String(med?.title || 'おくすり'),
+        date:currentDateKey(),
+        createdAt:new Date().toISOString()
+      };
+      addPendingApproval(pendingEntry);
+      const payload = {
+        action:'log',
+        id:state.currentSelectedMedId,
+        name:'ユーザー',
+        image:base64Image,
+        deviceId:getDeviceId(),
+        requestId
+      };
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 12000));
       const fetchPromise = fetch(GAS_URL, {
         method:'POST', mode:'no-cors', headers:{ 'Content-Type':'text/plain' }, body:JSON.stringify(payload)
       });
       await Promise.race([fetchPromise, timeoutPromise]);
 
-      incrementMedicineCount(state.currentSelectedMedId);
-      const reward = recordMedicationReward();
       state.currentSelectedMedId = null;
       cleanUrl();
       renderMedicationList();
-      showComplete(reward);
+      showApprovalPending();
+      startApprovalPolling();
     } catch (error) {
       showError(error.message);
     } finally {
@@ -615,12 +708,284 @@
     switchView('task-view');
   }
 
+
+  // ---- Parent email verification / approval flow v1.12 ----
+  function hasLegacyFootprint() {
+    const directKeys = [WALLET_KEY, ADHERENCE_KEY, PARENT_SETTINGS_KEY, PARENT_PIN_KEY, PARENT_PIN_LOCK_KEY, 'medicine-medal-correction-log-v1'];
+    if (directKeys.some(key => localStorage.getItem(key) !== null)) return true;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || '';
+      if (key.startsWith('count_')) return true;
+    }
+    return false;
+  }
+
+  function initializeMigrationMode() {
+    const existing = localStorage.getItem(MIGRATION_MODE_KEY);
+    if (['legacy','approval-required','approval'].includes(existing)) return existing;
+    const link = getParentLink();
+    const mode = link?.verified ? 'approval' : (hasLegacyFootprint() ? 'legacy' : 'approval-required');
+    localStorage.setItem(MIGRATION_MODE_KEY, mode);
+    return mode;
+  }
+
+  function getMigrationMode() { return initializeMigrationMode(); }
+
+  function setMigrationMode(mode) {
+    if (!['legacy','approval-required','approval'].includes(mode)) return;
+    localStorage.setItem(MIGRATION_MODE_KEY, mode);
+    renderMigrationNotice();
+    renderParentEmailSetting();
+  }
+
+  function usesApprovalFlow() { return getMigrationMode() === 'approval'; }
+  function isParentSetupRequired() { return getMigrationMode() === 'approval-required'; }
+
+  function renderMigrationNotice() {
+    const card = $('migration-notice');
+    if (!card) return;
+    const show = getMigrationMode() === 'legacy' && !isParentVerified() && localStorage.getItem(MIGRATION_NOTICE_DISMISSED_KEY) !== '1';
+    card.hidden = !show;
+  }
+
+  function ensureDeviceId() {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`);
+      localStorage.setItem(DEVICE_ID_KEY, id);
+    }
+    return id;
+  }
+
+  function getDeviceId() { return ensureDeviceId(); }
+
+  function getParentLink() {
+    try { return JSON.parse(localStorage.getItem(PARENT_LINK_KEY) || 'null'); } catch (_) { return null; }
+  }
+
+  function setParentLink(link) {
+    state.parentLink = link || null;
+    if (link) localStorage.setItem(PARENT_LINK_KEY, JSON.stringify(link));
+    else localStorage.removeItem(PARENT_LINK_KEY);
+  }
+
+  function isParentVerified() {
+    const link = state.parentLink || getParentLink();
+    return !!link?.verified;
+  }
+
+  function showParentOnboarding() {
+    const link = state.parentLink || getParentLink();
+    const wait = $('parent-verification-wait');
+    const formCard = $('send-parent-verification')?.closest('.settings-card');
+    const emailInput = $('onboarding-parent-email');
+    const laterBtn = $('onboarding-later');
+    if (laterBtn) laterBtn.hidden = getMigrationMode() !== 'legacy';
+    if (link?.pending) {
+      if (formCard) formCard.hidden = true;
+      if (wait) wait.hidden = false;
+      if ($('parent-verification-wait-copy')) $('parent-verification-wait-copy').textContent = `${link.pendingMaskedEmail || '登録したメール'} に確認メールを送りました。メール内の「このメールアドレスを登録」を押してください。`;
+    } else {
+      if (formCard) formCard.hidden = false;
+      if (wait) wait.hidden = true;
+      if (emailInput) emailInput.value = '';
+    }
+    switchView('parent-onboarding-view');
+  }
+
+  function resetOnboardingEmailForm() {
+    const link = state.parentLink || getParentLink() || {};
+    setParentLink({ ...link, pending:false, pendingMaskedEmail:'' });
+    showParentOnboarding();
+  }
+
+  async function sendParentVerification(source='onboarding') {
+    const input = source === 'settings' ? $('settings-parent-email') : $('onboarding-parent-email');
+    const error = source === 'settings' ? $('settings-parent-email-error') : $('onboarding-parent-error');
+    const email = String(input?.value || '').trim();
+    if (error) error.textContent = '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (error) error.textContent = 'メールアドレスを確認してください。';
+      return;
+    }
+    const btn = source === 'settings' ? $('settings-send-parent-verification') : $('send-parent-verification');
+    if (btn) btn.disabled = true;
+    try {
+      const payload = { action:'registerParent', deviceId:getDeviceId(), email };
+      await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload) });
+      const current = state.parentLink || getParentLink() || {};
+      setParentLink({ ...current, pending:true, pendingMaskedEmail:maskEmail(email) });
+      if (source === 'onboarding') showParentOnboarding();
+      else {
+        renderParentEmailSetting();
+        showToast('確認メールを送りました');
+      }
+    } catch (_) {
+      if (error) error.textContent = '確認メールを送れませんでした。通信環境を確認してください。';
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function refreshParentLinkStatus({ showOnboarding=false, forceToast=false }={}) {
+    try {
+      const url = `${GAS_URL}?action=getParentStatus&deviceId=${encodeURIComponent(getDeviceId())}&t=${Date.now()}`;
+      const res = await fetch(url, { method:'GET', mode:'cors', cache:'no-store' });
+      if (!res.ok) throw new Error('status');
+      const data = await res.json();
+      if (data?.status !== 'success') throw new Error(data?.message || 'status');
+      const link = {
+        verified:!!data.verified,
+        maskedEmail:String(data.maskedEmail || ''),
+        pending:!!data.pending,
+        pendingMaskedEmail:String(data.pendingMaskedEmail || '')
+      };
+      const before = isParentVerified();
+      setParentLink(link);
+      renderParentEmailSetting();
+      if (link.verified) {
+        setMigrationMode('approval');
+        localStorage.removeItem(MIGRATION_NOTICE_DISMISSED_KEY);
+        if ($('parent-onboarding-view')?.classList.contains('active-view')) switchView('task-view');
+        if (forceToast || !before) showToast('保護者メールの登録を確認しました。これからは確認後にメダルがもらえます');
+        return true;
+      }
+      if (showOnboarding && isParentSetupRequired()) showParentOnboarding();
+      if (forceToast) showToast('まだメールの確認が完了していません');
+      renderMigrationNotice();
+      return false;
+    } catch (_) {
+      const cached = getParentLink();
+      state.parentLink = cached;
+      if (showOnboarding && isParentSetupRequired() && !cached?.verified) showParentOnboarding();
+      renderMigrationNotice();
+      return !!cached?.verified;
+    }
+  }
+
+  function renderParentEmailSetting() {
+    const status = $('parent-email-status');
+    if (!status) return;
+    const link = state.parentLink || getParentLink() || {};
+    const strong = status.querySelector('strong');
+    if (link.verified) {
+      strong.textContent = `登録済み ${link.maskedEmail || ''}`.trim();
+    } else if (link.pending) {
+      strong.textContent = `確認待ち ${link.pendingMaskedEmail || ''}`.trim();
+    } else {
+      strong.textContent = '未登録';
+    }
+    const mode = $('approval-mode-summary');
+    if (mode) {
+      if (usesApprovalFlow()) mode.textContent = '保護者確認方式：有効（確認後にメダル付与）';
+      else if (isParentSetupRequired()) mode.textContent = '初回設定が必要です。保護者メールを登録してください。';
+      else mode.textContent = '移行期間中：従来方式で利用中。メール確認完了後に新方式へ切り替わります。';
+    }
+  }
+
+  function maskEmail(email) {
+    const [local, domain] = String(email || '').split('@');
+    if (!local || !domain) return '';
+    const shown = local.length <= 2 ? local[0] || '*' : local.slice(0,2);
+    return `${shown}${'*'.repeat(Math.max(2, Math.min(6, local.length - shown.length)))}@${domain}`;
+  }
+
+  function makeRequestId() {
+    return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  function getPendingApprovals() {
+    try { const v=JSON.parse(localStorage.getItem(PENDING_APPROVALS_KEY)||'[]'); return Array.isArray(v)?v:[]; } catch (_) { return []; }
+  }
+
+  function savePendingApprovals(list) {
+    localStorage.setItem(PENDING_APPROVALS_KEY, JSON.stringify((Array.isArray(list)?list:[]).slice(-30)));
+  }
+
+  function addPendingApproval(entry) {
+    const list=getPendingApprovals().filter(x=>x.requestId!==entry.requestId);
+    list.push(entry);
+    savePendingApprovals(list);
+  }
+
+  function getPendingApprovalCount(medId, dateKey=currentDateKey()) {
+    return getPendingApprovals().filter(x=>String(x.medId)===String(medId) && x.date===dateKey).length;
+  }
+
+  function getClaimedApprovals() {
+    try { const v=JSON.parse(localStorage.getItem(CLAIMED_APPROVALS_KEY)||'[]'); return Array.isArray(v)?v:[]; } catch (_) { return []; }
+  }
+
+  function rememberClaimedApproval(requestId) {
+    const list=getClaimedApprovals().filter(x=>x!==requestId);
+    list.push(requestId);
+    localStorage.setItem(CLAIMED_APPROVALS_KEY, JSON.stringify(list.slice(-100)));
+  }
+
+  function showApprovalPending() {
+    const status=$('approval-pending-status');
+    if(status) status.textContent='確認待ち';
+    switchView('approval-pending-view');
+  }
+
+  function startApprovalPolling() {
+    clearInterval(state.approvalPollTimer);
+    state.approvalPollTimer=setInterval(()=>syncPendingApprovals({silent:true}),15000);
+  }
+
+  async function syncPendingApprovals({ silent=true }={}) {
+    const pending=getPendingApprovals();
+    if (!pending.length) return {approved:0,rejected:0};
+    let approved=0,rejected=0;
+    const keep=[];
+    for (const item of pending) {
+      try {
+        const url=`${GAS_URL}?action=getRequestStatus&deviceId=${encodeURIComponent(getDeviceId())}&requestId=${encodeURIComponent(item.requestId)}&t=${Date.now()}`;
+        const res=await fetch(url,{method:'GET',mode:'cors',cache:'no-store'});
+        if(!res.ok) throw new Error('status');
+        const data=await res.json();
+        if(data?.status!=='success') throw new Error(data?.message||'status');
+        if(data.requestStatus==='approved') {
+          if(!getClaimedApprovals().includes(item.requestId)) {
+            setMedicineCount(item.medId, getMedicineCount(item.medId, item.date) + 1, item.date);
+            const reward=recordMedicationReward(item.date);
+            rememberClaimedApproval(item.requestId);
+            approved++;
+            fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'markRewarded',deviceId:getDeviceId(),requestId:item.requestId})}).catch(()=>{});
+            if ($('approval-pending-view')?.classList.contains('active-view')) showComplete(reward);
+          }
+        } else if(data.requestStatus==='rewarded') {
+          // サーバー側ですでに報酬処理済み。二重付与を避けるため保留一覧から外す。
+        } else if(data.requestStatus==='rejected') {
+          rejected++;
+          if ($('approval-pending-view')?.classList.contains('active-view')) {
+            const st=$('approval-pending-status'); if(st) st.textContent='撮り直してください';
+          }
+        } else {
+          keep.push(item);
+        }
+      } catch (_) {
+        keep.push(item);
+      }
+    }
+    savePendingApprovals(keep);
+    renderMedicationList();
+    renderTodayCorrections();
+    refreshRewardUI();
+    if(!silent) {
+      if(approved) showToast(`確認されました。メダル +${approved}`);
+      else if(rejected) showToast('撮り直しになった記録があります');
+      else showToast('まだ確認待ちです');
+    }
+    return {approved,rejected};
+  }
+
   // ---- Medal / weekly adherence ----
-  function recordMedicationReward() {
+  function recordMedicationReward(dateKey=currentDateKey()) {
     const wallet = getWallet() + 1;
     localStorage.setItem(WALLET_KEY, String(wallet));
     const adherence = getAdherence();
-    adherence.doneDates[currentDateKey()] = true;
+    adherence.doneDates[dateKey] = true;
     localStorage.setItem(ADHERENCE_KEY, JSON.stringify(adherence));
     refreshRewardUI();
     return { wallet, unlocked:isArcadeUnlocked() };
@@ -756,7 +1121,7 @@
     if (!game) return;
     state.currentGameId=gameId;
     $('game-frame-title').textContent=game.title;
-    $('game-frame').src=`${game.path}?embed=1&v=1.8`;
+    $('game-frame').src=`${game.path}?embed=1&v=1.12`;
     refreshWalletOnly();
     switchView('arcade-game-view');
   }

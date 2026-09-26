@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おくすりメダル＋">
   <title>おくすりメダル＋</title>
-  <link rel="manifest" href="manifest.webmanifest?v=1.8">
+  <link rel="manifest" href="manifest.webmanifest?v=1.12">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.8">
+  <link rel="stylesheet" href="styles.css?v=1.12">
 </head>
 <body>
   <div id="network-banner" class="network-banner" hidden>オフラインです。服薬記録の送信には通信が必要です。</div>
@@ -26,6 +26,33 @@
     <h2>おくすりメダル＋</h2>
     <p>じゅんびしています</p>
     <div class="spinner" aria-hidden="true"></div>
+  </div>
+
+  <div id="parent-onboarding-view" class="view settings-view parent-onboarding-view">
+    <header class="simple-header onboarding-header">
+      <img class="loading-app-icon" src="assets/brand/icon-64.png" alt="" width="64" height="64">
+      <div><p class="eyebrow dark">FIRST SETUP</p><h1>おうちのかたに設定してもらってください</h1></div>
+    </header>
+    <main class="onboarding-shell">
+      <section class="settings-card parent-email-card">
+        <p class="section-kicker">PARENT EMAIL</p>
+        <h2>確認メールの送り先</h2>
+        <p>服薬写真を撮ると、このメールアドレスへ確認通知が届きます。確認されるとメダルがもらえます。</p>
+        <label class="settings-label" for="onboarding-parent-email">保護者のメールアドレス</label>
+        <input id="onboarding-parent-email" class="settings-text-input" type="email" inputmode="email" autocomplete="email" placeholder="example@gmail.com">
+        <p id="onboarding-parent-error" class="settings-error" role="alert"></p>
+        <button id="send-parent-verification" class="btn btn-arcade settings-save-btn" type="button">確認メールを送る</button>
+      </section>
+      <section id="parent-verification-wait" class="settings-card verification-wait-card" hidden>
+        <div class="verification-icon" aria-hidden="true">✉</div>
+        <h2>メールを確認してください</h2>
+        <p id="parent-verification-wait-copy">保護者のスマホに届いたメールで「このメールアドレスを登録」を押してください。</p>
+        <button id="check-parent-verification" class="btn btn-secondary settings-action-btn" type="button">確認できたかチェック</button>
+        <button id="change-onboarding-email" class="text-link" type="button">メールアドレスを入力し直す</button>
+      </section>
+      <button id="onboarding-later" class="btn btn-secondary migration-later-btn" type="button" hidden>あとで設定する</button>
+      <p class="privacy-note">写真には、顔・氏名・住所・処方箋など不要な個人情報が写らないようにしてください。</p>
+    </main>
   </div>
 
   <div id="task-view" class="view home-view">
@@ -39,6 +66,15 @@
     </header>
 
     <main class="home-main">
+      <section id="migration-notice" class="migration-notice" hidden>
+        <div>
+          <p class="section-kicker">NEW</p>
+          <h2>保護者確認機能が使えるようになりました</h2>
+          <p>今までどおり使い続けられます。保護者メールを登録・確認すると、以後は写真をおうちの人が確認してからメダルがもらえる方式に切り替わります。</p>
+        </div>
+        <button id="migration-start-parent" class="btn btn-arcade" type="button">保護者メールを設定する</button>
+        <button id="migration-later" class="text-link" type="button">あとで</button>
+      </section>
       <section class="today-section" aria-labelledby="today-title">
         <div class="section-heading">
           <div>
@@ -84,7 +120,21 @@
     </header>
     <section class="settings-card app-info-card" aria-label="アプリ情報">
       <img src="assets/brand/icon-64.png" alt="" width="64" height="64">
-      <div><strong>おくすりメダル＋</strong><small>Version 1.8</small></div>
+      <div><strong>おくすりメダル＋</strong><small>Version 1.12</small></div>
+    </section>
+    <section class="settings-card parent-email-card">
+      <div class="settings-heading-row">
+        <div><p class="section-kicker">PARENT EMAIL</p><h2>服薬写真の確認先</h2></div>
+        <span class="settings-lock-badge">PIN保護</span>
+      </div>
+      <p>服薬写真を撮ると、登録した保護者のメールへ確認通知が届きます。</p>
+      <div id="parent-email-status" class="settings-summary"><span>登録状態</span><strong>確認中...</strong></div>
+      <p id="approval-mode-summary" class="settings-help approval-mode-summary"></p>
+      <label class="settings-label" for="settings-parent-email">メールアドレスを登録・変更</label>
+      <input id="settings-parent-email" class="settings-text-input" type="email" inputmode="email" autocomplete="email" placeholder="example@gmail.com">
+      <p id="settings-parent-email-error" class="settings-error" role="alert"></p>
+      <button id="settings-send-parent-verification" class="btn btn-secondary settings-action-btn" type="button">確認メールを送る</button>
+      <p class="settings-help">変更時も、新しいメールアドレスに届く確認メールを開くまで、現在の登録先はそのまま使われます。</p>
     </section>
     <section class="settings-card">
       <div class="settings-heading-row">
@@ -163,6 +213,18 @@
     <h2 class="success-title">記録を送っています</h2>
     <p>このまま少しお待ちください。</p>
     <div class="spinner" aria-hidden="true"></div>
+  </div>
+
+  <div id="approval-pending-view" class="view complete-view">
+    <section class="complete-card pending-card">
+      <div class="pending-mail-icon" aria-hidden="true">✉</div>
+      <p class="eyebrow dark">WAITING FOR PARENT</p>
+      <h1>おうちの人に確認をお願いしました</h1>
+      <p class="complete-message">写真は送信されました。おうちの人が「確認しました」を押すと、メダルが1枚もらえます。</p>
+      <div class="pending-status-box"><span>現在の状態</span><strong id="approval-pending-status">確認待ち</strong></div>
+      <button class="btn btn-arcade" id="check-approval-btn" type="button">確認状況をチェック</button>
+      <button class="btn btn-secondary" id="pending-back-btn" type="button">今日のおくすりへ戻る</button>
+    </section>
   </div>
 
   <div id="complete-view" class="view complete-view">
@@ -251,6 +313,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="games/manifest.js"></script>
-  <script src="app.js?v=1.8"></script>
+  <script src="app.js?v=1.12"></script>
 </body>
 </html>
