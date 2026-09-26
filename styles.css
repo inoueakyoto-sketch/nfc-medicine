@@ -244,3 +244,23 @@ body.modal-open{overflow:hidden}
 .correction-warning{margin-top:12px;padding:12px;border-radius:13px;background:#fff6e8;border:1px solid #ead7b8}
 .correction-warning strong{display:block;margin-bottom:3px;font-size:.76rem;color:#7f5a24}
 .correction-warning p{margin:0!important;font-size:.7rem!important;line-height:1.55;color:#76654b!important}
+
+
+/* v1.12: parent email verification + migration-safe approval flow */
+.settings-text-input{width:100%;min-height:48px;padding:10px 12px;border:1px solid #d6cfc5;border-radius:13px;background:#fff;color:#333;font:inherit;font-weight:750;box-sizing:border-box}
+.settings-text-input:focus-visible{outline:3px solid rgba(49,93,99,.22);outline-offset:2px;border-color:var(--teal)}
+.parent-onboarding-view{background:var(--bg);min-height:100dvh}.onboarding-header{align-items:center}.onboarding-header .loading-app-icon{margin:0;width:56px;height:56px}
+.onboarding-shell{width:min(100%,520px);margin:0 auto;padding-bottom:max(28px,env(safe-area-inset-bottom))}.parent-email-card h2{margin:2px 0 8px}.parent-email-card>p{line-height:1.6}
+.verification-wait-card{text-align:center}.verification-icon,.pending-mail-icon{width:58px;height:58px;margin:0 auto 12px;border-radius:18px;display:grid;place-items:center;background:var(--teal-soft);color:var(--teal-dark);font-size:1.8rem;font-weight:900}
+.verification-wait-card h2{margin:2px 0 8px}.verification-wait-card p{line-height:1.6}.verification-wait-card .text-link{margin-top:10px}
+.privacy-note{font-size:.72rem;line-height:1.6;color:#817970;margin:12px 4px 0}
+.pending-card .pending-mail-icon{margin-top:2px}.pending-status-box{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0;padding:12px 14px;border-radius:14px;background:var(--surface-soft);font-size:.78rem;color:#776f66}.pending-status-box strong{color:var(--teal-dark);font-size:.9rem}
+.med-pending-note{margin:8px 0 0;padding:8px 10px;border-radius:11px;background:#fff6e8;color:#7f5a24;font-size:.72rem;font-weight:850}
+
+
+/* v1.12 migration card */
+.migration-notice{margin:0 0 16px;padding:16px;border-radius:18px;background:#fff8e7;border:1px solid #ead7ad;box-shadow:0 8px 24px rgba(83,67,37,.08)}
+.migration-notice h2{margin:2px 0 7px;font-size:1rem;color:#34484b}.migration-notice p{margin:0 0 12px;font-size:.76rem;line-height:1.65;color:#6f675d}
+.migration-notice .btn{width:100%;margin-top:4px}.migration-notice .text-link{display:block;margin:10px auto 0}.migration-later-btn{width:100%;margin-top:12px}.approval-mode-summary{margin-top:8px!important;padding:10px 12px;border-radius:11px;background:var(--surface-soft)}
+
+.migration-later-btn[hidden]{display:none!important}
